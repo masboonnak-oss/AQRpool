@@ -1,0 +1,66 @@
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+
+# compiled output
+dist
+tmp
+out-tsc
+*.tsbuildinfo
+.expo
+.expo-shared
+
+# dependencies
+node_modules
+node_modules.broken/
+
+# local archives
+*.rar
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# misc
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+npm-debug.log
+yarn-error.log
+testem.log
+/typings
+
+# System Files
+.DS_Store
+Thumbs.db
+
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
+
+# Replit
+.cache/
+.local/
+
+# Customer data + backups (never commit — contains slips, usage logs, password hashes)
+data/
+backups/
+.run-logs/
+
+# Box-local sync tooling (Windows-specific; N2 doesn't need it)
+sync/
+aquarich_pooledit_sync_packet/
+aquarich_pooledit_sync_packet.zip
+
+# Sovereign OS partner-node agent seed (WIRE-2, D-S-ARCH241) — OS infra, not Pooledit code
+CLAUDE.md

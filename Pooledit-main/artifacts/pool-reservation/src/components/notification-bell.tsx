@@ -37,6 +37,7 @@ export const NotificationBell: FC = () => {
   useEffect(() => {
     if (!token) return;
     let alive = true;
+    let sseOk = false;
     const ctrl = new AbortController();
     const headers = { Authorization: `Bearer ${token}` };
     const apply = (data: { items?: Notif[]; serverTime?: string }) => {
@@ -52,6 +53,7 @@ export const NotificationBell: FC = () => {
       try {
         const r = await fetch(`${baseUrl}/api/notifications/stream`, { headers, signal: ctrl.signal });
         if (!r.ok || !r.body) throw new Error("no stream");
+        sseOk = true;
         const reader = r.body.getReader(); const dec = new TextDecoder(); let buf = "";
         for (;;) {
           const { value, done } = await reader.read(); if (done) break;
@@ -66,7 +68,7 @@ export const NotificationBell: FC = () => {
     };
     poll();
     startSSE();
-    const iv = setInterval(poll, 25000);
+    const iv = setInterval(() => { if (!sseOk) void poll(); }, 60000);
     return () => { alive = false; clearInterval(iv); ctrl.abort(); };
   }, [token]);
 

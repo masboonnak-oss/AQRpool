@@ -119,7 +119,7 @@ export const AssistantWidget: FC = () => {
       }
     };
     check();
-    const iv = setInterval(check, 8000);
+    const iv = setInterval(check, 60000);
     return () => { alive = false; clearInterval(iv); };
   }, []);
 

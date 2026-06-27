@@ -200,7 +200,7 @@ export function AdminMembers() {
   // (and instantly when the admin returns to the tab). Remaining is computed live
   // server-side as quota − bookingsUsed, so each poll reflects the current count.
   const { data, isLoading } = useListUsers(params, {
-    query: { queryKey: getListUsersQueryKey(params), refetchInterval: 8000, refetchOnWindowFocus: true, refetchOnMount: "always" },
+    query: { queryKey: getListUsersQueryKey(params), refetchInterval: 30000, refetchOnWindowFocus: true, refetchOnMount: "always" },
   });
   const users: User[] = (data as any)?.users ?? [];
   const totalPages: number = (data as any)?.totalPages ?? 1;

@@ -34,7 +34,7 @@ export const AdminLeave: FC = () => {
 
   const { data: rows } = useQuery<Leave[]>({
     queryKey: ["leave", "admin", tab],
-    refetchInterval: 20000,
+    refetchInterval: 30000,
     queryFn: async () => {
       const q = tab === "all" ? "" : `?status=${tab}`;
       const r = await fetch(`${baseUrl}/api/leave${q}`, { headers: auth });

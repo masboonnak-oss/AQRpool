@@ -27,7 +27,7 @@ export const Products: FC = () => {
 
   const { data: products, isLoading } = useQuery<Product[]>({
     queryKey: ["products", "active"],
-    refetchInterval: 15000, // real-time stock/price updates from admin
+    refetchInterval: 60000, // stock/price updates without hammering the API
     queryFn: async () => {
       const res = await fetch(`${baseUrl}/api/products`, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) return [];

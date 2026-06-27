@@ -41,7 +41,7 @@ export function AdminProducts() {
 
   const { data: products, isLoading } = useQuery<Product[]>({
     queryKey: ["products", "all"],
-    refetchInterval: 15000, // near real-time stock view
+    refetchInterval: 60000, // periodic stock view without hammering the API
     queryFn: async () => {
       const res = await fetch(`${baseUrl}/api/products/all`, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error("Failed");

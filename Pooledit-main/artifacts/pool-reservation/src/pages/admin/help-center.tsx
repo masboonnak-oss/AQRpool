@@ -78,7 +78,7 @@ export const AdminHelpCenter: FC = () => {
     if (!activeTicket) return;
     const id = activeTicket.id;
     fetchMessages(id);
-    const iv = setInterval(() => fetchMessages(id), 10000);
+    const iv = setInterval(() => fetchMessages(id), 15000);
     return () => clearInterval(iv);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTicket?.id]);

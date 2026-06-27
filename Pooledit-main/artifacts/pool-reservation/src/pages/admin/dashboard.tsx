@@ -36,7 +36,7 @@ export const AdminDashboard: FC = () => {
   const [, navigate] = useLocation();
   type Revenue = { totalRevenue: number; todayRevenue: number; monthRevenue: number; pendingRevenue: number; paidOrders: number; counts: Record<string, number>; topProducts: { name: string; qty: number; revenue: number }[] };
   const { data: revenue } = useQuery<Revenue>({
-    queryKey: ["orders", "revenue"], refetchInterval: 20000,
+    queryKey: ["orders", "revenue"], refetchInterval: 60000,
     queryFn: async () => {
       const r = await fetch(`${baseUrl}/api/orders/admin/revenue`, { headers: { Authorization: `Bearer ${token}` } });
       if (!r.ok) return { totalRevenue: 0, todayRevenue: 0, monthRevenue: 0, pendingRevenue: 0, paidOrders: 0, counts: {}, topProducts: [] };
@@ -45,7 +45,7 @@ export const AdminDashboard: FC = () => {
   });
   type Prod = { id: number; name: string; stock: number | null; isActive: boolean };
   const { data: allProducts } = useQuery<Prod[]>({
-    queryKey: ["products", "all"], refetchInterval: 20000,
+    queryKey: ["products", "all"], refetchInterval: 60000,
     queryFn: async () => {
       const r = await fetch(`${baseUrl}/api/products/all`, { headers: { Authorization: `Bearer ${token}` } });
       if (!r.ok) return [];

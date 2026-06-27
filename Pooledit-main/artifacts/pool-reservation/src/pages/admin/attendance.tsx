@@ -39,7 +39,7 @@ export const AdminAttendance: FC = () => {
 
   const { data: onDuty } = useQuery<Rec[]>({
     queryKey: ["attendance", "on-duty"],
-    refetchInterval: 20000,
+    refetchInterval: 30000,
     queryFn: async () => {
       const r = await fetch(`${baseUrl}/api/attendance/on-duty`, { headers: auth });
       return r.ok ? r.json() : [];

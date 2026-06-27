@@ -58,7 +58,7 @@ export const ChatPage: FC = () => {
   useEffect(() => {
     if (!activeTicket) return;
     fetchMessages(activeTicket.id);
-    const iv = setInterval(() => fetchMessages(activeTicket.id), 10000);
+    const iv = setInterval(() => fetchMessages(activeTicket.id), 15000);
     return () => clearInterval(iv);
   }, [activeTicket]);
 

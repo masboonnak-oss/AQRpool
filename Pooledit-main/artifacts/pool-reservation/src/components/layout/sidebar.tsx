@@ -39,7 +39,7 @@ export const Sidebar: FC = () => {
         .then(r => r.json()).then(d => setLeavePending(d.count || 0)).catch(() => {});
     };
     fetchCounts();
-    const iv = setInterval(fetchCounts, 30000);
+    const iv = setInterval(fetchCounts, 60000);
     return () => clearInterval(iv);
   }, [isAdmin]);
 

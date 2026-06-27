@@ -82,7 +82,7 @@ export const AdminWorkPlan: FC = () => {
 
   const { data: tasks = [], isLoading } = useQuery<AdminTask[]>({
     queryKey: ["admin-tasks", date],
-    refetchInterval: 15000,
+    refetchInterval: 30000,
     queryFn: async () => {
       const r = await fetch(`${baseUrl}/api/tasks?date=${date}`, { headers: auth });
       return r.ok ? r.json() : [];

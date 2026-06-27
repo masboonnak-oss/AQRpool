@@ -14,14 +14,15 @@ if (Number.isNaN(port) || port <= 0) {
 
 const basePath = process.env.BASE_PATH || "/";
 const apiTarget = process.env.API_TARGET || "http://127.0.0.1:5000";
+const isProd = process.env.NODE_ENV === "production";
 
 export default defineConfig({
   base: basePath,
   plugins: [
     react(),
     tailwindcss(),
-    runtimeErrorOverlay(),
-    ...(process.env.NODE_ENV !== "production" &&
+    ...(!isProd ? [runtimeErrorOverlay()] : []),
+    ...(!isProd &&
     process.env.REPL_ID !== undefined
       ? [
           await import("@replit/vite-plugin-cartographer").then((m) =>

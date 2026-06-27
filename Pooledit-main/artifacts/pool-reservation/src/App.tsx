@@ -60,10 +60,10 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: false,
-      // Keep data fresh "real-time": auto-refresh on focus and on a steady interval.
-      refetchOnWindowFocus: true,
-      refetchInterval: 30000, // poll every 30s while the tab is open
-      staleTime: 10000,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+      staleTime: 30000,
+      gcTime: 5 * 60 * 1000,
     },
   },
 });

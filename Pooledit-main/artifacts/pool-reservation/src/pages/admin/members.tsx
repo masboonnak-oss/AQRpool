@@ -61,6 +61,7 @@ type User = {
 };
 
 const roleConfig: Record<string, { label: string; cls: string; dot: string }> = {
+  dev: { label: "DEV", cls: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300", dot: "bg-red-500" },
   super_admin: { label: "Super Admin", cls: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300", dot: "bg-purple-500" },
   admin: { label: "Admin", cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300", dot: "bg-blue-500" },
   instructor: { label: "ครูฝึก", cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300", dot: "bg-amber-500" },
@@ -401,6 +402,7 @@ export function AdminMembers() {
     { key: "member", label: "สมาชิก" },
     { key: "instructor", label: "ครูฝึก" },
     { key: "staff", label: "พนักงาน" },
+    { key: "dev", label: "DEV" },
     { key: "admin", label: "แอดมิน" },
   ];
 
@@ -638,6 +640,7 @@ export function AdminMembers() {
                   <SelectItem value="staff">พนักงาน — ลงเวลางานได้</SelectItem>
                   <SelectItem value="admin">Admin — ผู้ดูแลระบบ</SelectItem>
                   <SelectItem value="super_admin">Super Admin — สิทธิ์สูงสุด</SelectItem>
+                  <SelectItem value="dev"><span className="text-red-600 font-semibold">DEV — นักพัฒนา (เห็นทุกเมนู)</span></SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -706,6 +709,7 @@ export function AdminMembers() {
                   <SelectItem value="staff">พนักงาน — ลงเวลางานได้</SelectItem>
                   <SelectItem value="admin">Admin — ผู้ดูแลระบบ</SelectItem>
                   <SelectItem value="super_admin">Super Admin — สิทธิ์สูงสุด</SelectItem>
+                  <SelectItem value="dev"><span className="text-red-600 font-semibold">DEV — นักพัฒนา (เห็นทุกเมนู)</span></SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground mt-1">

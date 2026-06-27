@@ -25,9 +25,14 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-// admin and super_admin both have administrative privileges.
+// "dev" is the highest role — a superset of super_admin. It passes every gate.
+export function isDevRole(role?: string): boolean {
+  return role === "dev";
+}
+
+// admin, super_admin and dev all have administrative privileges.
 export function isAdminRole(role?: string): boolean {
-  return role === "admin" || role === "super_admin";
+  return role === "admin" || role === "super_admin" || role === "dev";
 }
 
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
@@ -37,16 +42,25 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   return next();
 }
 
+// super_admin gates also admit dev (dev is a superset of super_admin).
 export function requireSuperAdmin(req: Request, res: Response, next: NextFunction) {
-  if (!req.user || req.user.role !== "super_admin") {
+  if (!req.user || (req.user.role !== "super_admin" && req.user.role !== "dev")) {
     return res.status(403).json({ error: "Forbidden: super admin only" });
+  }
+  return next();
+}
+
+// Developer-only gate (e.g. the GitHub patch panel).
+export function requireDev(req: Request, res: Response, next: NextFunction) {
+  if (!req.user || !isDevRole(req.user.role)) {
+    return res.status(403).json({ error: "Forbidden: developer only" });
   }
   return next();
 }
 
 // Staff = anyone who works here (admins + instructors + employees). Used by the attendance system.
 export function isStaffRole(role?: string): boolean {
-  return role === "admin" || role === "super_admin" || role === "instructor" || role === "staff";
+  return role === "admin" || role === "super_admin" || role === "dev" || role === "instructor" || role === "staff";
 }
 
 export function requireStaff(req: Request, res: Response, next: NextFunction) {

@@ -48,7 +48,8 @@ import { useCart } from "@/hooks/use-cart";
 
 export const Header: FC = () => {
   const { language, setLanguage, t } = useTranslation();
-  const { user, isAdmin, isInstructor, isStaff, logout } = useAuth();
+  const { user, isAdmin, isInstructor, isStaff, isDev, logout } = useAuth();
+  const isSuper = (user as any)?.role === "super_admin" || isDev;
   const { theme, toggleTheme } = useTheme();
   const [location, navigate] = useLocation();
   const [open, setOpen] = useState(false);
@@ -121,7 +122,7 @@ export const Header: FC = () => {
       title: "ภาพรวมระบบ",
       links: [
         { href: "/admin", label: t("nav.admin.dashboard"), icon: LayoutDashboard },
-        ...((user as any)?.role === "super_admin" ? [
+        ...(isSuper ? [
           { href: "/admin/overview", label: "ภาพรวมทุกสาขา", icon: TrendingUp },
           { href: "/admin/branches", label: "จัดการสาขา", icon: Building2 },
         ] : []),
@@ -156,7 +157,7 @@ export const Header: FC = () => {
       links: [
         { href: "/admin/announcements", label: t("nav.admin.announcements"), icon: Bell },
         { href: "/admin/chat", label: t("nav.admin.chat"), icon: MessageCircle },
-        ...((user as any)?.role === "super_admin" ? [{ href: "/admin/ai-chat", label: "วิเคราะห์แชท AI", icon: Bot }] : []),
+        ...(isSuper ? [{ href: "/admin/ai-chat", label: "วิเคราะห์แชท AI", icon: Bot }] : []),
         { href: "/admin/help", label: "ศูนย์ช่วยเหลือ", icon: LifeBuoy },
       ],
     },
@@ -171,8 +172,8 @@ export const Header: FC = () => {
     {
       title: "ตั้งค่าระบบ",
       links: [
-        ...((user as any)?.role === "super_admin" ? [
-          { href: "/admin/update", label: "อัพเดทระบบ", icon: RefreshCw },
+        ...(isDev ? [
+          { href: "/admin/update", label: "อัพเดทระบบ (DEV)", icon: RefreshCw },
         ] : []),
         { href: "/admin/theme", label: "ธีมสีเว็บไซต์", icon: Palette },
         { href: "/admin/settings", label: t("nav.admin.settings"), icon: Settings },
@@ -196,8 +197,25 @@ export const Header: FC = () => {
   ];
 
   const links = isAdmin ? adminLinks : isInstructor ? instructorLinks : isStaff ? staffLinks : memberLinks;
-  // Admins and members render as labelled groups; instructors/staff keep a flat list.
-  const navGroups = isAdmin ? adminGroups : (isInstructor || isStaff) ? null : memberGroups;
+
+  // Dev sees EVERY menu: all admin groups + the member view + the worker view.
+  const devExtraGroups = [
+    { title: "มุมมองสมาชิก (Dev)", links: memberLinks },
+    {
+      title: "มุมมองพนักงาน/ครู (Dev)",
+      links: [
+        { href: "/instructor/schedule", label: "ตารางสอนของฉัน", icon: CalendarDays },
+        { href: "/tasks", label: "ภารกิจประจำวัน", icon: ClipboardList },
+        { href: "/attendance", label: "ลงเวลางาน", icon: Clock },
+        { href: "/leave", label: "การลา", icon: CalendarOff },
+      ],
+    },
+  ];
+
+  // Dev → every group; admins → admin groups; members → member groups; instructors/staff keep a flat list.
+  const navGroups = isDev
+    ? [...adminGroups, ...devExtraGroups]
+    : isAdmin ? adminGroups : (isInstructor || isStaff) ? null : memberGroups;
 
   const handleNavClick = () => setOpen(false);
 
@@ -235,7 +253,7 @@ export const Header: FC = () => {
                   {user.firstName} {user.lastName}
                 </div>
                 <div className="text-xs text-muted-foreground mt-0.5 font-mono">
-                  {(user as any).memberCode ?? ""} · {isAdmin ? "Admin" : "Member"}
+                  {(user as any).memberCode ?? ""} · {isDev ? "Dev" : isAdmin ? "Admin" : "Member"}
                 </div>
               </div>
             )}

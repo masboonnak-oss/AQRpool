@@ -2,7 +2,9 @@ import { pgTable, serial, text, timestamp, pgEnum, integer, boolean } from "driz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
-export const userRoleEnum = pgEnum("user_role", ["admin", "member", "instructor", "super_admin", "staff"]);
+// "dev" is the highest role: a developer/owner account that sees every menu and
+// owns the GitHub patch (pull/push) panel. It is a superset of super_admin.
+export const userRoleEnum = pgEnum("user_role", ["admin", "member", "instructor", "super_admin", "staff", "dev"]);
 
 export const usersTable = pgTable("users", {
   id: serial("id").primaryKey(),

@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { authenticate, requireSuperAdmin } from "../middlewares/auth.js";
+import { authenticate, requireDev } from "../middlewares/auth.js";
 import { getStatus, pushChanges, pullChanges } from "../lib/git.js";
 import { logger } from "../lib/logger.js";
 
-// System update panel — pull/push patches via GitHub. Super admin only.
+// System update panel — pull/push patches via GitHub. Developer (dev) role only.
 const router = Router();
-router.use(authenticate, requireSuperAdmin);
+router.use(authenticate, requireDev);
 
 // GET /update/status — branch, remote, local changes, and incoming updates.
 router.get("/status", async (_req, res) => {

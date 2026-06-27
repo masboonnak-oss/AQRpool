@@ -15,8 +15,10 @@ import { BrandMark } from "@/components/brand";
 
 export const Sidebar: FC = () => {
   const [location] = useLocation();
-  const { user, isAdmin, isInstructor, isStaff, logout } = useAuth();
+  const { user, isAdmin, isInstructor, isStaff, isDev, logout } = useAuth();
   const { t } = useTranslation();
+  // super_admin-only items also show for dev (dev is a superset).
+  const isSuper = (user as any)?.role === "super_admin" || isDev;
   const token = localStorage.getItem("pool_token");
   const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
   const [unreadChat, setUnreadChat] = useState(0);
@@ -114,7 +116,7 @@ export const Sidebar: FC = () => {
       title: "ภาพรวมระบบ",
       links: [
         { href: "/admin", label: t("nav.admin.dashboard"), icon: LayoutDashboard },
-        ...((user as any)?.role === "super_admin" ? [
+        ...(isSuper ? [
           { href: "/admin/overview", label: "ภาพรวมทุกสาขา", icon: TrendingUp },
           { href: "/admin/branches", label: "จัดการสาขา", icon: Building2 },
         ] : []),
@@ -149,7 +151,7 @@ export const Sidebar: FC = () => {
       links: [
         { href: "/admin/announcements", label: t("nav.admin.announcements"), icon: Bell },
         { href: "/admin/chat", label: t("nav.admin.chat"), icon: MessageCircle, badge: unreadChat > 0 ? unreadChat : undefined },
-        ...((user as any)?.role === "super_admin" ? [{ href: "/admin/ai-chat", label: "วิเคราะห์แชท AI", icon: Bot }] : []),
+        ...(isSuper ? [{ href: "/admin/ai-chat", label: "วิเคราะห์แชท AI", icon: Bot }] : []),
         { href: "/admin/help", label: "ศูนย์ช่วยเหลือ", icon: LifeBuoy, badge: devUnread > 0 ? devUnread : undefined },
       ],
     },
@@ -164,8 +166,10 @@ export const Sidebar: FC = () => {
     {
       title: "ตั้งค่าระบบ",
       links: [
-        ...((user as any)?.role === "super_admin" ? [
-          { href: "/admin/update", label: "อัพเดทระบบ", icon: RefreshCw },
+        ...(isDev ? [
+          { href: "/admin/update", label: "อัพเดทระบบ (DEV)", icon: RefreshCw },
+        ] : []),
+        ...(isSuper ? [
           { href: "/admin/audit-logs", label: "บันทึกความปลอดภัย", icon: ShieldCheck },
         ] : []),
         { href: "/admin/theme", label: "ธีมสีเว็บไซต์", icon: Palette },
@@ -191,8 +195,25 @@ export const Sidebar: FC = () => {
   ];
 
   const links = isAdmin ? adminLinks : isInstructor ? instructorLinks : isStaff ? staffLinks : memberLinks;
-  // Admins and members render as labelled groups; instructors/staff keep a flat list.
-  const navGroups = isAdmin ? adminGroups : (isInstructor || isStaff) ? null : memberGroups;
+
+  // Dev sees EVERY menu in the app: all admin groups + the member view + the worker view.
+  const devExtraGroups = [
+    { title: "มุมมองสมาชิก (Dev)", links: memberLinks },
+    {
+      title: "มุมมองพนักงาน/ครู (Dev)",
+      links: [
+        { href: "/instructor/schedule", label: "ตารางสอนของฉัน", icon: CalendarDays },
+        { href: "/tasks", label: "ภารกิจประจำวัน", icon: ClipboardList },
+        { href: "/attendance", label: "ลงเวลางาน", icon: Clock },
+        { href: "/leave", label: "การลา", icon: CalendarOff },
+      ],
+    },
+  ];
+
+  // Dev → every group; admins → admin groups; members → member groups; instructors/staff keep a flat list.
+  const navGroups = isDev
+    ? [...adminGroups, ...devExtraGroups]
+    : isAdmin ? adminGroups : (isInstructor || isStaff) ? null : memberGroups;
   const initials = user ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase() : "U";
   const avatarUrl = (user as any)?.profileImageUrl;
 
@@ -203,7 +224,7 @@ export const Sidebar: FC = () => {
       </div>
 
       <nav className="flex-1 p-4 space-y-0.5 overflow-y-auto">
-        <div className="text-xs font-semibold text-muted-foreground mb-3 px-3">{isAdmin ? "ADMIN" : isInstructor ? "INSTRUCTOR" : isStaff ? "พนักงาน" : "MEMBER"}</div>
+        <div className="text-xs font-semibold text-muted-foreground mb-3 px-3">{isDev ? "DEV" : isAdmin ? "ADMIN" : isInstructor ? "INSTRUCTOR" : isStaff ? "พนักงาน" : "MEMBER"}</div>
         {navGroups ? navGroups.map((group) => (
           <div key={group.title} className="space-y-0.5">
             <div className="px-3 pt-3 pb-1 text-[11px] font-bold uppercase tracking-wide text-muted-foreground/80">

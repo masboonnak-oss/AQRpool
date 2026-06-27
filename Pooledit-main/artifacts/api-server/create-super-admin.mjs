@@ -23,6 +23,8 @@ const { Pool } = pg;
 
 const username = process.argv[2] || "admin";
 const password = process.argv[3] || "admin123";
+// 4th arg = role (super_admin | dev | admin | ...). Defaults to super_admin.
+const role = process.argv[4] || "super_admin";
 
 if (!process.env.DATABASE_URL) {
   console.error("ERROR: DATABASE_URL is not set. Provide the Postgres connection string, e.g.:");
@@ -35,21 +37,21 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 async function main() {
   const passwordHash = await bcrypt.hash(password, 12);
 
-  // Insert a fresh super_admin, or if the username already exists, upgrade its
-  // role and reset its password. Other profile fields are left untouched on update.
+  // Insert a fresh account, or if the username already exists, upgrade its role
+  // and reset its password. Other profile fields are left untouched on update.
   const sql = `
     INSERT INTO users (first_name, last_name, phone, username, password_hash, role, branch_id)
-    VALUES ($1, $2, $3, $4, $5, 'super_admin', 1)
+    VALUES ($1, $2, $3, $4, $5, $6::user_role, 1)
     ON CONFLICT (username) DO UPDATE
       SET password_hash = EXCLUDED.password_hash,
-          role          = 'super_admin'
+          role          = EXCLUDED.role
     RETURNING id, username, role, created_at;
   `;
-  const params = ["Super", "Admin", "-", username, passwordHash];
+  const params = ["Super", "Admin", "-", username, passwordHash, role];
 
   const { rows } = await pool.query(sql, params);
   const u = rows[0];
-  console.log("OK — super_admin ready:");
+  console.log(`OK — ${u.role} ready:`);
   console.log(`  id=${u.id}  username=${u.username}  role=${u.role}  created_at=${u.created_at.toISOString?.() ?? u.created_at}`);
   console.log(`  login password: ${password}`);
 }

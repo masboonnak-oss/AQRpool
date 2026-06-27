@@ -68,10 +68,11 @@ const queryClient = new QueryClient({
   },
 });
 
-const ProtectedRoute = ({ component: Component, adminOnly = false, instructorOnly = false, staffOnly = false, allowInstructor = false, ...rest }: any) => {
-  const { isAuthenticated, isLoading, isAdmin, isInstructor, isStaff } = useAuth();
+const ProtectedRoute = ({ component: Component, adminOnly = false, devOnly = false, instructorOnly = false, staffOnly = false, allowInstructor = false, ...rest }: any) => {
+  const { isAuthenticated, isLoading, isAdmin, isInstructor, isStaff, isDev } = useAuth();
   if (isLoading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (!isAuthenticated) return <Redirect to="/" />;
+  if (devOnly && !isDev) return <Redirect to="/admin" />;
   if (adminOnly && !isAdmin) return <Redirect to="/dashboard" />;
   if (instructorOnly && !isInstructor && !isAdmin) return <Redirect to="/dashboard" />;
   // staffOnly = any worker (admin / instructor / employee) — e.g. the attendance clock
@@ -144,7 +145,7 @@ function Router() {
         <Route path="/admin/chat"><ProtectedRoute component={ChatPage} adminOnly /></Route>
         <Route path="/admin/help"><ProtectedRoute component={AdminHelpCenter} adminOnly /></Route>
         <Route path="/admin/audit-logs"><ProtectedRoute component={AdminAuditLogs} adminOnly /></Route>
-        <Route path="/admin/update"><ProtectedRoute component={AdminUpdate} adminOnly /></Route>
+        <Route path="/admin/update"><ProtectedRoute component={AdminUpdate} devOnly /></Route>
 
         <Route component={NotFound} />
       </Switch>

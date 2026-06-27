@@ -11,6 +11,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isInstructor: boolean;
   isStaff: boolean;
+  isDev: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -50,12 +51,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Still resolving as long as we have a token, no user yet, and /me hasn't errored.
   const isLoading = !!token && !user && !meError;
   const isAuthenticated = !!user && !!token;
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  // role is cast to string: "dev" may not yet be in the generated User.role union.
+  const isDev = (user?.role as string) === 'dev'; // developer/owner — highest role, sees everything
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin' || isDev;
   const isInstructor = user?.role === 'instructor';
   const isStaff = user?.role === 'staff'; // employee (clocks in/out, not admin/instructor)
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout, isAuthenticated, isAdmin, isInstructor, isStaff }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout, isAuthenticated, isAdmin, isInstructor, isStaff, isDev }}>
       {children}
     </AuthContext.Provider>
   );

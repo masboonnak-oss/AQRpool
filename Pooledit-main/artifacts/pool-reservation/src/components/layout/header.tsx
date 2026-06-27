@@ -37,7 +37,8 @@ import {
   Clock,
   ClipboardList,
   TrendingUp,
-  MessageCircle
+  MessageCircle,
+  RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/components/brand";
@@ -170,6 +171,9 @@ export const Header: FC = () => {
     {
       title: "ตั้งค่าระบบ",
       links: [
+        ...((user as any)?.role === "super_admin" ? [
+          { href: "/admin/update", label: "อัพเดทระบบ", icon: RefreshCw },
+        ] : []),
         { href: "/admin/theme", label: "ธีมสีเว็บไซต์", icon: Palette },
         { href: "/admin/settings", label: t("nav.admin.settings"), icon: Settings },
       ],

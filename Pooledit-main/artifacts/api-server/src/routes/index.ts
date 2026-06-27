@@ -25,6 +25,7 @@ import branchesRouter from "./branches";
 import leaveRouter from "./leave";
 import tasksRouter from "./tasks";
 import auditLogsRouter from "./auditLogs";
+import updateRouter from "./update";
 
 const router: IRouter = Router();
 
@@ -54,5 +55,6 @@ router.use("/branches", branchesRouter);
 router.use("/leave", leaveRouter);
 router.use("/tasks", tasksRouter);
 router.use("/audit-logs", auditLogsRouter);
+router.use("/update", updateRouter);
 
 export default router;

@@ -54,6 +54,7 @@ const AdminBranches = lazy(() => import("@/pages/admin/branches").then((m) => ({
 const AdminOverview = lazy(() => import("@/pages/admin/overview").then((m) => ({ default: m.AdminOverview })));
 const AdminHelpCenter = lazy(() => import("@/pages/admin/help-center").then((m) => ({ default: m.AdminHelpCenter })));
 const AdminAuditLogs = lazy(() => import("@/pages/admin/audit-logs").then((m) => ({ default: m.AdminAuditLogs })));
+const AdminUpdate = lazy(() => import("@/pages/admin/update").then((m) => ({ default: m.AdminUpdate })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -143,6 +144,7 @@ function Router() {
         <Route path="/admin/chat"><ProtectedRoute component={ChatPage} adminOnly /></Route>
         <Route path="/admin/help"><ProtectedRoute component={AdminHelpCenter} adminOnly /></Route>
         <Route path="/admin/audit-logs"><ProtectedRoute component={AdminAuditLogs} adminOnly /></Route>
+        <Route path="/admin/update"><ProtectedRoute component={AdminUpdate} adminOnly /></Route>
 
         <Route component={NotFound} />
       </Switch>

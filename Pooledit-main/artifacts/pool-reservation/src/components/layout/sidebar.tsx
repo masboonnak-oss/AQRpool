@@ -6,7 +6,7 @@ import {
   LayoutDashboard, CalendarDays, CalendarPlus, Calendar, User,
   Settings, Users, LogOut, Droplets, Building2, GraduationCap,
   Bell, Wallet, CreditCard, Crown, MessageCircle, QrCode, ScanLine, ShoppingBag, Bot, Package, Sparkles, Palette, LifeBuoy, Clock, TrendingUp, CalendarOff,
-  ClipboardList, ShieldCheck,
+  ClipboardList, ShieldCheck, RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -165,6 +165,7 @@ export const Sidebar: FC = () => {
       title: "ตั้งค่าระบบ",
       links: [
         ...((user as any)?.role === "super_admin" ? [
+          { href: "/admin/update", label: "อัพเดทระบบ", icon: RefreshCw },
           { href: "/admin/audit-logs", label: "บันทึกความปลอดภัย", icon: ShieldCheck },
         ] : []),
         { href: "/admin/theme", label: "ธีมสีเว็บไซต์", icon: Palette },

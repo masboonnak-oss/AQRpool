@@ -27,8 +27,11 @@ type Avail = {
   endTime: string;
   maxPeople: number;
   note: string | null;
+  packageId: number | null;
   isAvailable: boolean;
 };
+
+type PackageOption = { id: number; name: string };
 
 type ScheduleForm = {
   kind: "weekly" | "date";
@@ -38,8 +41,11 @@ type ScheduleForm = {
   endTime: string;
   maxPeople: string;
   note: string;
+  packageId: string; // "" = ไม่ระบุคอร์ส
   isAvailable: boolean;
 };
+
+const NO_COURSE = "none";
 
 const DOW = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
 const BKK_TODAY = new Intl.DateTimeFormat("en-CA", {
@@ -57,6 +63,7 @@ const emptyForm = (): ScheduleForm => ({
   endTime: "19:00",
   maxPeople: "5",
   note: "",
+  packageId: "",
   isAvailable: true,
 });
 
@@ -79,6 +86,18 @@ export function AdminInstructorScheduleDialog({
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const queryKey = ["admin", "instructor-availability", instructor?.id];
+
+  const { data: packages = [] } = useQuery<PackageOption[]>({
+    queryKey: ["admin", "packages-all"],
+    enabled: open,
+    queryFn: async () => {
+      const res = await fetch(`${baseUrl}/api/packages/all`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json().catch(() => []);
+      if (!res.ok) return [];
+      return (data as any[]).map((p) => ({ id: p.id, name: p.name }));
+    },
+  });
+  const packageName = (id: number | null) => packages.find((p) => p.id === id)?.name ?? null;
 
   const { data: items = [], isLoading } = useQuery<Avail[]>({
     queryKey,
@@ -109,6 +128,7 @@ export function AdminInstructorScheduleDialog({
       const maxPeople = Number(form.maxPeople);
       if (!Number.isInteger(maxPeople) || maxPeople < 0 || maxPeople > 99) throw new Error("จำนวนสมาชิกที่รับสอนต้องอยู่ระหว่าง 0-99 คน");
 
+      const packageId = form.packageId ? Number(form.packageId) : null;
       const body = form.kind === "weekly"
         ? {
             kind: form.kind,
@@ -117,6 +137,7 @@ export function AdminInstructorScheduleDialog({
             endTime: form.endTime,
             maxPeople,
             note: form.note,
+            packageId,
             isAvailable: form.isAvailable,
           }
         : {
@@ -126,6 +147,7 @@ export function AdminInstructorScheduleDialog({
             endTime: form.endTime,
             maxPeople,
             note: form.note,
+            packageId,
             isAvailable: form.isAvailable,
           };
       const url = editingId == null
@@ -180,6 +202,7 @@ export function AdminInstructorScheduleDialog({
       endTime: slot.endTime,
       maxPeople: String(slot.maxPeople ?? 5),
       note: slot.note ?? "",
+      packageId: slot.packageId ? String(slot.packageId) : "",
       isAvailable: slot.isAvailable,
     });
   };
@@ -202,6 +225,7 @@ export function AdminInstructorScheduleDialog({
           </span>
           {slot.isAvailable && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">รับ {slot.maxPeople ?? 5} คน</span>}
           {!slot.isAvailable && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] text-amber-700">ปิดรับสอน</span>}
+          {slot.packageId && <span className="rounded-full bg-cyan-100 px-2 py-0.5 text-[11px] text-cyan-700">คอร์ส: {packageName(slot.packageId) ?? `#${slot.packageId}`}</span>}
         </div>
         {slot.note && <p className="truncate text-xs text-muted-foreground">{slot.note}</p>}
       </div>
@@ -311,6 +335,18 @@ export function AdminInstructorScheduleDialog({
                   placeholder="เช่น 5"
                 />
                 <p className="text-xs text-muted-foreground">กำหนดได้ 0-99 คนต่อรอบ ระบบสมาชิกจะเห็นและจองตามจำนวนนี้</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>คอร์ส/แพ็กเกจของรอบนี้</Label>
+                <Select value={form.packageId || NO_COURSE} onValueChange={(v) => setForm((f) => ({ ...f, packageId: v === NO_COURSE ? "" : v }))}>
+                  <SelectTrigger><SelectValue placeholder="ไม่ระบุคอร์ส" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_COURSE}>ไม่ระบุ (ลูกค้าเลือกแพ็กเกจเอง)</SelectItem>
+                    {packages.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">ถ้าระบุคอร์ส ระบบจะหักแพ็กเกจคอร์สนั้นให้ลูกค้าอัตโนมัติตอนจอง ลูกค้าไม่ต้องเลือกเอง</p>
               </div>
 
               <div className="space-y-1.5">

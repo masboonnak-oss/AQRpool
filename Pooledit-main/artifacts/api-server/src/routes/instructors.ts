@@ -1,6 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { db, instructorsTable, reservationsTable, instructorAvailabilityTable, usersTable, settingsTable } from "@workspace/db";
+import { db, instructorsTable, reservationsTable, instructorAvailabilityTable, usersTable, settingsTable, membershipPackagesTable } from "@workspace/db";
 import { eq, ilike, or, sql, and, inArray, isNotNull, asc, gte, lte, ne } from "drizzle-orm";
 import { authenticate, requireAdmin } from "../middlewares/auth.js";
 import { attachBranch, branchEq, newRowBranch } from "../middlewares/branch.js";
@@ -276,6 +276,10 @@ router.get("/teaching", authenticate, attachBranch, async (req, res) => {
       branchEq(req, reservationsTable.branchId),
     ));
 
+    // Map package id -> name so each teaching slot can show its assigned course.
+    const pkgRows = await db.select({ id: membershipPackagesTable.id, name: membershipPackagesTable.name }).from(membershipPackagesTable);
+    const pkgName = new Map(pkgRows.map((p) => [p.id, p.name]));
+
     const applies = (row: typeof instructorAvailabilityTable.$inferSelect) =>
       (row.kind === "date" && row.date === date) || (row.kind === "weekly" && row.dayOfWeek === dayOfWeek);
     const rowCovers = (row: typeof instructorAvailabilityTable.$inferSelect, startTime: string, endTime: string) =>
@@ -315,6 +319,8 @@ router.get("/teaching", authenticate, attachBranch, async (req, res) => {
           startTime,
           endTime,
           note: cover.note,
+          packageId: cover.packageId ?? null,
+          packageName: cover.packageId ? (pkgName.get(cover.packageId) ?? null) : null,
           bookedPeople,
           maxPeople,
           remainingPeople,
@@ -608,7 +614,7 @@ router.post("/:id/availability", authenticate, requireAdmin, attachBranch, async
     )).limit(1);
     if (!inst) return res.status(404).json({ error: "Instructor not found" });
 
-    const { kind, dayOfWeek, date, startTime, endTime, note, isAvailable, maxPeople } = req.body;
+    const { kind, dayOfWeek, date, startTime, endTime, note, isAvailable, maxPeople, packageId } = req.body;
     const validationError = validateAvailability({ kind, dayOfWeek, date, startTime, endTime });
     if (validationError) return res.status(400).json({ error: validationError });
     const parsedMaxPeople = parseMaxPeople(maxPeople);
@@ -623,6 +629,7 @@ router.post("/:id/availability", authenticate, requireAdmin, attachBranch, async
       endTime,
       maxPeople: parsedMaxPeople,
       note: note || null,
+      packageId: packageId ? Number(packageId) : null,
       isAvailable: isAvailable === false ? false : true,
     }).returning();
     return res.status(201).json(row);
@@ -657,6 +664,7 @@ router.patch("/:id/availability/:slotId", authenticate, requireAdmin, attachBran
       note: req.body.note !== undefined ? req.body.note : current.note,
       isAvailable: req.body.isAvailable !== undefined ? Boolean(req.body.isAvailable) : current.isAvailable,
       maxPeople: req.body.maxPeople ?? current.maxPeople,
+      packageId: req.body.packageId !== undefined ? (req.body.packageId ? Number(req.body.packageId) : null) : current.packageId,
     };
     const validationError = validateAvailability(candidate);
     if (validationError) return res.status(400).json({ error: validationError });
@@ -671,6 +679,7 @@ router.patch("/:id/availability/:slotId", authenticate, requireAdmin, attachBran
       endTime: candidate.endTime,
       maxPeople: parsedMaxPeople,
       note: candidate.note || null,
+      packageId: candidate.packageId,
       isAvailable: candidate.isAvailable,
     }).where(and(
       eq(instructorAvailabilityTable.id, slotId),

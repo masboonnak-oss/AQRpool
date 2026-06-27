@@ -14,6 +14,9 @@ export const instructorAvailabilityTable = pgTable("instructor_availability", {
   endTime: text("end_time").notNull(),
   maxPeople: integer("max_people").notNull().default(5),
   note: text("note"),
+  // Optional course/package this slot is for. When set, a booking against this slot
+  // auto-uses the member's package of this type (no manual course selection needed).
+  packageId: integer("package_id"),
   isAvailable: boolean("is_available").notNull().default(true), // false = blocked-out slot
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

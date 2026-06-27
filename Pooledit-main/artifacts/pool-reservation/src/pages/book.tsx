@@ -27,6 +27,8 @@ type TeachingSlot = {
   startTime: string;
   endTime: string;
   note: string | null;
+  packageId: number | null;
+  packageName: string | null;
   bookedPeople: number;
   maxPeople: number;
   remainingPeople: number;
@@ -191,14 +193,30 @@ export const Book: FC = () => {
   const usablePackages = (usage?.packages ?? []).filter((pkg) => pkg.remaining === null || pkg.remaining > 0);
   const selectedPackage = usablePackages.find((pkg) => pkg.memberPackageId === memberPackageId) ?? null;
 
+  // When the admin pinned a course to the chosen teaching slot, the package is fixed
+  // by that course, so the customer doesn't choose it (and can't pick the wrong one).
+  const courseRequiredId = selectedTeacherSlot?.packageId ?? null;
+  const courseName = selectedTeacherSlot?.packageName ?? null;
+  const courseUsablePackage = courseRequiredId ? (usablePackages.find((p) => p.packageId === courseRequiredId) ?? null) : null;
+  const courseLocked = courseRequiredId != null; // this slot dictates the course
+  const courseMissing = courseLocked && !courseUsablePackage; // member lacks/used up that course
+
+  // Free-choice slots: auto-pick the first usable package. Course slots are handled below.
   useEffect(() => {
+    if (courseRequiredId) return;
     if (!memberPackageId && usablePackages.length > 0) {
       setMemberPackageId(usablePackages[0].memberPackageId);
     }
     if (memberPackageId && usablePackages.length > 0 && !usablePackages.some((pkg) => pkg.memberPackageId === memberPackageId)) {
       setMemberPackageId(usablePackages[0].memberPackageId);
     }
-  }, [memberPackageId, usablePackages]);
+  }, [memberPackageId, usablePackages, courseRequiredId]);
+
+  // Course slots: lock the member package to the course's package (or null if they lack it).
+  useEffect(() => {
+    if (!courseRequiredId) return;
+    setMemberPackageId(courseUsablePackage ? courseUsablePackage.memberPackageId : null);
+  }, [courseRequiredId, courseUsablePackage]);
 
   // Scroll to slot section when date is selected
   useEffect(() => {
@@ -260,7 +278,7 @@ export const Book: FC = () => {
       return;
     }
     if (!memberPackageId || !selectedPackage) {
-      toast({ title: "กรุณาเลือกแพ็กเกจที่จะใช้จอง", variant: "destructive" });
+      toast({ title: courseMissing ? "คุณยังไม่มีแพ็กเกจสำหรับคอร์สนี้" : "กรุณาเลือกแพ็กเกจที่จะใช้จอง", variant: "destructive" });
       return;
     }
 
@@ -743,7 +761,23 @@ export const Book: FC = () => {
                     {remaining === null ? "ไม่จำกัด" : `${remaining} ครั้ง`}
                   </span>
                 </div>
-                {usablePackages.length > 0 && (
+                {courseLocked && (
+                  <div className="rounded-2xl border-2 border-cyan-200 dark:border-cyan-900 bg-cyan-50/60 dark:bg-cyan-950/20 p-4 space-y-1">
+                    <div className="text-sm font-semibold flex items-center gap-1.5">
+                      <GraduationCap className="w-4 h-4 text-cyan-600" /> คอร์สของรอบนี้: {courseName || `#${courseRequiredId}`}
+                    </div>
+                    {courseMissing ? (
+                      <div className="text-sm text-destructive">
+                        คุณยังไม่มีแพ็กเกจสำหรับคอร์สนี้ หรือจำนวนครั้งหมดแล้ว กรุณาซื้อแพ็กเกจคอร์สนี้ก่อนจอง
+                      </div>
+                    ) : (
+                      <div className="text-sm text-cyan-700 dark:text-cyan-300">
+                        ระบบจะหัก 1 ครั้งจาก “{courseUsablePackage?.name}” ให้อัตโนมัติ · คงเหลือ {courseUsablePackage?.remaining === null ? "ไม่จำกัด" : `${courseUsablePackage?.remaining} ครั้ง`} (ไม่ต้องเลือกเอง)
+                      </div>
+                    )}
+                  </div>
+                )}
+                {!courseLocked && usablePackages.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-sm font-medium">เลือกแพ็กเกจที่จะใช้หักแต้ม</p>
                     <div className="grid gap-2 sm:grid-cols-2">
@@ -816,7 +850,9 @@ export const Book: FC = () => {
               </p>
               <p className="text-lg font-bold flex items-center gap-1.5">
                 <Ticket className="w-4 h-4 text-primary" />
-                {selectedPackage ? <>ใช้แพ็กเกจ: {selectedPackage.name}</> : "กรุณาเลือกแพ็กเกจ"}
+                {courseMissing ? "ยังไม่มีแพ็กเกจสำหรับคอร์สนี้"
+                  : selectedPackage ? <>{courseLocked ? `คอร์ส ${courseName ?? ""}: ` : "ใช้แพ็กเกจ: "}{selectedPackage.name}</>
+                  : "กรุณาเลือกแพ็กเกจ"}
               </p>
             </div>
 

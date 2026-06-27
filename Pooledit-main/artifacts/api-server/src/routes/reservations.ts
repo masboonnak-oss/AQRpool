@@ -112,6 +112,19 @@ async function instructorCapacityForSlot(instructorId: number, date: string, sta
   return Math.max(...available.map((row) => row.maxPeople ?? DEFAULT_INSTRUCTOR_MAX_PEOPLE_PER_SLOT));
 }
 
+// The course/package the admin pinned to the covering availability slot (or null = free choice).
+async function instructorSlotPackageId(instructorId: number, date: string, startTime: string, endTime: string): Promise<number | null> {
+  const rows = await db.select().from(instructorAvailabilityTable)
+    .where(eq(instructorAvailabilityTable.instructorId, instructorId));
+  const dayOfWeek = new Date(`${date}T00:00:00Z`).getUTCDay();
+  const cover = rows.find((row) =>
+    row.isAvailable &&
+    ((row.kind === "date" && row.date === date) || (row.kind === "weekly" && row.dayOfWeek === dayOfWeek)) &&
+    timeToMinutes(row.startTime) <= timeToMinutes(startTime) && timeToMinutes(row.endTime) >= timeToMinutes(endTime),
+  );
+  return cover?.packageId ?? null;
+}
+
 async function instructorPeopleInSlot(
   instructorId: number,
   date: string,
@@ -450,21 +463,32 @@ router.post("/", authenticate, attachBranch, async (req, res) => {
     }
 
     const userId = req.user!.userId;
-
-    const selectedMemberPackageId = Number(memberPackageId);
-    if (!Number.isInteger(selectedMemberPackageId) || selectedMemberPackageId < 1) {
-      return res.status(400).json({ error: "กรุณาเลือกแพ็กเกจที่จะใช้จอง", needPackage: true });
-    }
-
-    // Must hold the selected active package with remaining quota to book.
     const activeUsages = await getActiveUsages(db, userId);
-    const selectedUsage = activeUsages.find((u) => u.memberPackage.id === selectedMemberPackageId);
-    if (!selectedUsage || (selectedUsage.remaining !== null && selectedUsage.remaining <= 0)) {
-      return res.status(400).json({
-        error: "แพ็กเกจที่เลือกใช้ไม่ได้ หรือจำนวนครั้งคงเหลือหมด กรุณาเลือกแพ็กเกจใหม่",
-        needPackage: true,
-      });
+
+    // If the admin pinned a course/package to this teaching slot, the package is
+    // chosen automatically by course — the member doesn't pick it (and can't pick
+    // the wrong one). Otherwise fall back to the member's selected package.
+    const coursePackageId = instructor ? await instructorSlotPackageId(instructor.id, date, startTime, endTime) : null;
+    let selectedUsage: (typeof activeUsages)[number] | undefined;
+    if (coursePackageId != null) {
+      selectedUsage = activeUsages.find((u) => u.memberPackage.packageId === coursePackageId && (u.remaining === null || u.remaining > 0));
+      if (!selectedUsage) {
+        return res.status(400).json({ error: "คุณยังไม่มีแพ็กเกจสำหรับคอร์สนี้ หรือจำนวนครั้งคงเหลือหมด", needPackage: true });
+      }
+    } else {
+      const selectedMemberPackageId = Number(memberPackageId);
+      if (!Number.isInteger(selectedMemberPackageId) || selectedMemberPackageId < 1) {
+        return res.status(400).json({ error: "กรุณาเลือกแพ็กเกจที่จะใช้จอง", needPackage: true });
+      }
+      selectedUsage = activeUsages.find((u) => u.memberPackage.id === selectedMemberPackageId);
+      if (!selectedUsage || (selectedUsage.remaining !== null && selectedUsage.remaining <= 0)) {
+        return res.status(400).json({
+          error: "แพ็กเกจที่เลือกใช้ไม่ได้ หรือจำนวนครั้งคงเหลือหมด กรุณาเลือกแพ็กเกจใหม่",
+          needPackage: true,
+        });
+      }
     }
+    const selectedMemberPackageId = selectedUsage.memberPackage.id;
 
     // A use is deducted immediately from the package the member selected. If the
     // booking is still pending, the member may cancel and the use is refunded.

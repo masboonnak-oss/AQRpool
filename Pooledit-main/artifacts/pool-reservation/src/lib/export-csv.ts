@@ -91,7 +91,8 @@ function zipStore(files: { name: string; data: string }[]) {
     u32(centralSize), u32(offset), u16(0),
   ];
   const parts = [...localParts, ...centralParts, ...end];
-  return new Blob(parts, { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const blobParts = parts.map((p) => p.buffer.slice(p.byteOffset, p.byteOffset + p.byteLength) as ArrayBuffer);
+  return new Blob(blobParts, { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
 }
 
 export function downloadXlsx(filename: string, rows: CsvValue[][], sheetName = "Report") {

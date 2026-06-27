@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   X, Sparkles, ArrowRight, CalendarCheck, Waves, HeartPulse, Globe,
+  Wallet, Ticket,
 } from "lucide-react";
 
 /* localStorage flag — set when the visitor ticks "don't show again". */
@@ -145,6 +146,15 @@ export const LandingPopup: FC = () => {
             >
               {t("popup.cta.book")} <ArrowRight className="w-5 h-5" />
             </Button>
+
+            <div className="grid min-w-0 grid-cols-2 gap-2.5">
+              <Button onClick={() => go("/topup")} variant="outline" className="min-w-0 h-11 rounded-xl font-semibold border-primary/25 hover:bg-primary/5 gap-1.5">
+                <Wallet className="w-4 h-4" /> เติมเงิน
+              </Button>
+              <Button onClick={() => go("/packages")} variant="outline" className="min-w-0 h-11 rounded-xl font-semibold border-primary/25 hover:bg-primary/5 gap-1.5">
+                <Ticket className="w-4 h-4" /> แพ็กเกจ
+              </Button>
+            </div>
 
             {!isAuthenticated && (
               <div className="grid min-w-0 grid-cols-2 gap-2.5">

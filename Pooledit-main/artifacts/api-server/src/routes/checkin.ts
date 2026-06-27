@@ -41,7 +41,7 @@ async function findMemberForCheckin(input: string, req: any) {
   return u ?? null;
 }
 
-// GET /checkin/my-code — member: get (or lazily generate) the personal token for their QR.
+// GET /checkin/my-code - member: get or lazily generate the personal token for their QR.
 router.get("/my-code", authenticate, async (req, res) => {
   try {
     const [u] = await db.select().from(usersTable).where(eq(usersTable.id, req.user!.userId)).limit(1);
@@ -57,42 +57,69 @@ router.get("/my-code", authenticate, async (req, res) => {
   }
 });
 
-// GET /checkin/lookup?token= — admin: preview member + remaining BEFORE deducting.
+// GET /checkin/lookup?token= - admin: preview member and package choices before deducting.
 router.get("/lookup", authenticate, requireAdmin, attachBranch, async (req, res) => {
   try {
     const token = ((req.query.token as string) || "").trim();
     if (!token) return res.status(400).json({ error: "token required" });
-    // Branch-confine the scan: a branch admin can't look up another branch's member.
     const u = await findMemberForCheckin(token, req);
     if (!u) return res.status(404).json({ error: "ไม่พบสมาชิกจากรหัสสมาชิก เบอร์โทร หรือ QR นี้" });
+
     const usages = await getActiveUsages(db, u.id);
     const usable = pickUsable(usages);
     const hasUnlimited = usages.some((x) => x.remaining === null);
+
     return res.json({
       user: publicUserCard(u),
       hasQuota: !!usable,
       totalRemaining: hasUnlimited ? null : usages.reduce((s, x) => s + (x.remaining ?? 0), 0),
       packageName: usable?.package.name ?? null,
+      packages: usages.map((x) => ({
+        memberPackageId: x.memberPackage.id,
+        packageId: x.package.id,
+        name: x.package.name,
+        endDate: x.memberPackage.endDate.toISOString(),
+        quota: x.quota,
+        used: x.used,
+        remaining: x.remaining,
+        canUse: x.remaining === null || x.remaining > 0,
+      })),
     });
   } catch {
     return res.status(500).json({ error: "Failed to lookup" });
   }
 });
 
-// POST /checkin — admin: scan a member QR token -> deduct one use (walk-in check-in).
+// POST /checkin - admin: scan a member QR token and deduct one use from a selected course.
 router.post("/", authenticate, requireAdmin, attachBranch, async (req, res) => {
   try {
     const token = ((req.body.token as string) || "").trim();
+    const memberPackageId = req.body.memberPackageId === undefined || req.body.memberPackageId === null
+      ? null
+      : Number(req.body.memberPackageId);
+
     if (!token) return res.status(400).json({ error: "token required" });
+    if (req.body.memberPackageId !== undefined && (memberPackageId == null || !Number.isInteger(memberPackageId) || memberPackageId <= 0)) {
+      return res.status(400).json({ error: "memberPackageId invalid" });
+    }
+
     const u = await findMemberForCheckin(token, req);
     if (!u) return res.status(404).json({ error: "ไม่พบสมาชิกจากรหัสสมาชิก เบอร์โทร หรือ QR นี้" });
 
     let consumed;
     try {
-      consumed = await db.transaction((tx) => consumeUse(tx, u.id, { source: "checkin", note: "เช็คอินหน้างาน (สแกน QR)" }));
+      consumed = await db.transaction((tx) => consumeUse(tx, u.id, {
+        source: "checkin",
+        note: "เช็คอินหน้างาน (สแกน QR)",
+        memberPackageId,
+      }));
     } catch (err) {
       if (err instanceof NoQuotaError) {
-        return res.status(400).json({ error: "สมาชิกไม่มีจำนวนครั้งคงเหลือ", needPackage: true, user: publicUserCard(u) });
+        return res.status(400).json({
+          error: "สมาชิกไม่มีจำนวนครั้งคงเหลือ",
+          needPackage: true,
+          user: publicUserCard(u),
+        });
       }
       throw err;
     }

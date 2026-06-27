@@ -8,13 +8,26 @@ import { QrCode, Camera, CameraOff, UserCheck, CheckCircle2, XCircle, Ticket, Se
 import { cn } from "@/lib/utils";
 import { MemberAvatar } from "@/components/member-avatar";
 
+type LookupPackage = {
+  memberPackageId: number;
+  packageId: number;
+  name: string;
+  endDate: string;
+  quota: number | null;
+  used: number;
+  remaining: number | null;
+  canUse: boolean;
+};
+
 type LookupData = {
   code: string;
   user: { id: number; firstName: string; lastName: string; houseNumber: string | null; profileImageUrl?: string | null };
   hasQuota: boolean;
   totalRemaining: number | null;
   packageName: string | null;
+  packages?: LookupPackage[];
 };
+
 type ResultData = {
   ok: boolean;
   message: string;
@@ -35,6 +48,7 @@ export function AdminCheckinScan() {
   const [manual, setManual] = useState("");
   const [lookup, setLookup] = useState<LookupData | null>(null);
   const [result, setResult] = useState<ResultData | null>(null);
+  const [selectedMemberPackageId, setSelectedMemberPackageId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function stopScanner() {
@@ -54,6 +68,7 @@ export function AdminCheckinScan() {
   async function startScanner() {
     setResult(null);
     setLookup(null);
+    setSelectedMemberPackageId(null);
     try {
       const s = new Html5Qrcode(ELEMENT_ID);
       scannerRef.current = s;
@@ -69,7 +84,11 @@ export function AdminCheckinScan() {
       );
     } catch {
       setScanning(false);
-      toast({ title: "เปิดกล้องไม่ได้", description: "อนุญาตการใช้กล้อง หรือใช้การกรอกรหัสด้านล่าง", variant: "destructive" });
+      toast({
+        title: "เปิดกล้องไม่ได้",
+        description: "อนุญาตการใช้กล้อง หรือใช้การกรอกรหัสด้านล่าง",
+        variant: "destructive",
+      });
     }
   }
 
@@ -85,9 +104,12 @@ export function AdminCheckinScan() {
       const data = await res.json();
       if (!res.ok) {
         setLookup(null);
+        setSelectedMemberPackageId(null);
         toast({ title: "ไม่พบสมาชิก", description: data.error, variant: "destructive" });
       } else {
-        setLookup({ ...data, code: c });
+        const packages = (data.packages ?? []) as LookupPackage[];
+        setLookup({ ...data, code: c, packages });
+        setSelectedMemberPackageId(packages.find((p) => p.canUse)?.memberPackageId ?? null);
       }
     } catch {
       toast({ title: "เกิดข้อผิดพลาด", variant: "destructive" });
@@ -97,13 +119,13 @@ export function AdminCheckinScan() {
   }
 
   async function confirmCheckin() {
-    if (!lookup?.code) return;
+    if (!lookup?.code || !selectedMemberPackageId) return;
     setBusy(true);
     try {
       const res = await fetch(`${baseUrl}/api/checkin`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ token: lookup.code }),
+        body: JSON.stringify({ token: lookup.code, memberPackageId: selectedMemberPackageId }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -112,6 +134,7 @@ export function AdminCheckinScan() {
         setResult({ ok: true, message: data.message, user: data.user, remainingAfter: data.remainingAfter, packageName: data.packageName });
       }
       setLookup(null);
+      setSelectedMemberPackageId(null);
     } catch {
       toast({ title: "เกิดข้อผิดพลาด", variant: "destructive" });
     } finally {
@@ -119,16 +142,20 @@ export function AdminCheckinScan() {
     }
   }
 
+  const lookupPackages = lookup?.packages ?? [];
+  const selectedPackage = lookupPackages.find((p) => p.memberPackageId === selectedMemberPackageId) ?? null;
+
   return (
-    <div className="p-6 max-w-md mx-auto space-y-6">
+    <div className="mx-auto max-w-md space-y-6 p-4 sm:p-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-display font-extrabold tracking-tight text-gradient flex items-center gap-2">
           <QrCode className="w-6 h-6 text-primary" /> สแกนเช็คอิน
         </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">สแกน QR ของสมาชิกเพื่อหักสิทธิ์การใช้งาน 1 ครั้ง</p>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          สแกน QR ของสมาชิก เลือกคอร์สที่ต้องการ แล้วระบบจะหักสิทธิ์ 1 ครั้งจากคอร์สนั้นเท่านั้น
+        </p>
       </div>
 
-      {/* Camera */}
       <Card className="overflow-hidden rounded-2xl">
         <CardContent className="p-4 space-y-3">
           <div id={ELEMENT_ID} className={cn("w-full rounded-xl overflow-hidden bg-black/90 mx-auto", !scanning && "hidden")} />
@@ -150,10 +177,11 @@ export function AdminCheckinScan() {
         </CardContent>
       </Card>
 
-      {/* Manual */}
       <Card className="rounded-2xl">
         <CardContent className="p-4 space-y-2">
-          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">ค้นหาด้วยรหัสสมาชิก / เบอร์โทร / QR</label>
+          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            ค้นหาด้วยรหัสสมาชิก / เบอร์โทร / QR
+          </label>
           <div className="flex gap-2">
             <Input
               value={manual}
@@ -169,7 +197,6 @@ export function AdminCheckinScan() {
         </CardContent>
       </Card>
 
-      {/* Lookup preview -> confirm */}
       {lookup && (
         <Card className="rounded-2xl border-primary/40 ring-2 ring-primary/10">
           <CardContent className="p-5 space-y-4">
@@ -180,20 +207,66 @@ export function AdminCheckinScan() {
                 <div className="text-xs text-muted-foreground">บ้านเลขที่ {lookup.user.houseNumber ?? "-"}</div>
               </div>
             </div>
+
             <div className="rounded-xl bg-secondary/40 p-3 flex justify-between items-center">
               <span className="text-sm text-muted-foreground">{lookup.packageName ?? "ไม่มีแพ็กเกจ"}</span>
               <span className={cn("font-bold", lookup.hasQuota ? "text-primary" : "text-destructive")}>
                 คงเหลือ {lookup.totalRemaining === null ? "ไม่จำกัด" : `${lookup.totalRemaining} ครั้ง`}
               </span>
             </div>
-            <Button className="w-full gap-2 min-h-[48px]" disabled={busy || !lookup.hasQuota} onClick={confirmCheckin}>
+
+            {lookupPackages.length > 0 && (
+              <div className="space-y-2">
+                <div className="text-xs font-bold uppercase tracking-wide text-muted-foreground">เลือกคอร์สที่จะตัด</div>
+                <div className="grid gap-2">
+                  {lookupPackages.map((pkg) => {
+                    const active = selectedMemberPackageId === pkg.memberPackageId;
+                    return (
+                      <button
+                        key={pkg.memberPackageId}
+                        type="button"
+                        disabled={!pkg.canUse}
+                        onClick={() => setSelectedMemberPackageId(pkg.memberPackageId)}
+                        className={cn(
+                          "w-full rounded-xl border p-3 text-left transition-all",
+                          active ? "border-primary bg-primary/10 ring-2 ring-primary/20" : "border-border bg-card hover:border-primary/50",
+                          !pkg.canUse && "cursor-not-allowed opacity-50",
+                        )}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="truncate text-sm font-bold">{pkg.name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              หมดอายุ {new Date(pkg.endDate).toLocaleDateString("th-TH")}
+                            </div>
+                          </div>
+                          <div className="shrink-0 rounded-full bg-secondary px-2.5 py-1 text-xs font-bold">
+                            {pkg.remaining === null ? "ไม่จำกัด" : `เหลือ ${pkg.remaining}`}
+                          </div>
+                        </div>
+                        <div className="mt-1 text-[11px] text-muted-foreground">
+                          ใช้ไป {pkg.used}/{pkg.quota ?? "∞"}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {selectedPackage && (
+              <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-primary">
+                จะตัดคอร์ส: <span className="font-bold">{selectedPackage.name}</span>
+              </div>
+            )}
+
+            <Button className="w-full gap-2 min-h-[48px]" disabled={busy || !lookup.hasQuota || !selectedMemberPackageId} onClick={confirmCheckin}>
               <UserCheck className="w-5 h-5" /> {lookup.hasQuota ? "ยืนยันเช็คอิน (หัก 1 ครั้ง)" : "ไม่มีสิทธิ์คงเหลือ"}
             </Button>
           </CardContent>
         </Card>
       )}
 
-      {/* Result */}
       {result && (
         <Card className={cn("rounded-2xl", result.ok ? "border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20" : "border-destructive/40 bg-destructive/5")}>
           <CardContent className="p-5 text-center space-y-2">

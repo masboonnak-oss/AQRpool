@@ -1,4 +1,4 @@
-import { FC } from "react";
+import { FC, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,7 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/use-cart";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingBag, Sparkles, ShoppingCart, Plus } from "lucide-react";
+import { ShoppingBag, Sparkles, ShoppingCart, Plus, Package } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { MyOrders } from "./my-orders";
 
 type Product = {
   id: number; name: string; nameEn: string | null; category: string | null;
@@ -19,6 +21,9 @@ export const Products: FC = () => {
   const { add, count, items } = useCart();
   const { toast } = useToast();
   const [, navigate] = useLocation();
+  // The club shop and a member's own orders live under one heading; this toggle
+  // switches between buying ("สินค้า") and order history ("คำสั่งซื้อของฉัน").
+  const [tab, setTab] = useState<"shop" | "orders">("shop");
 
   const { data: products, isLoading } = useQuery<Product[]>({
     queryKey: ["products", "active"],
@@ -51,13 +56,36 @@ export const Products: FC = () => {
             <Sparkles className="w-4 h-4 text-cyan-500" /> สินค้าและอุปกรณ์ของ Aquarich
           </p>
         </div>
-        <Button variant="outline" className="relative gap-2 shrink-0" onClick={() => navigate("/cart")}>
-          <ShoppingCart className="w-4 h-4" /> ตะกร้า
-          {count > 0 && <span className="absolute -top-2 -right-2 min-w-5 h-5 px-1 rounded-full bg-primary text-white text-[11px] font-bold flex items-center justify-center">{count}</span>}
-        </Button>
+        {tab === "shop" && (
+          <Button variant="outline" className="relative gap-2 shrink-0" onClick={() => navigate("/cart")}>
+            <ShoppingCart className="w-4 h-4" /> ตะกร้า
+            {count > 0 && <span className="absolute -top-2 -right-2 min-w-5 h-5 px-1 rounded-full bg-primary text-white text-[11px] font-bold flex items-center justify-center">{count}</span>}
+          </Button>
+        )}
       </div>
 
-      {isLoading ? (
+      {/* Toggle between the shop and the member's own orders (merged under one heading) */}
+      <div className="inline-flex rounded-xl border border-border bg-muted/40 p-1 gap-1">
+        {([
+          { key: "shop", label: "สินค้า", icon: ShoppingBag },
+          { key: "orders", label: "คำสั่งซื้อของฉัน", icon: Package },
+        ] as const).map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={cn(
+              "flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors",
+              tab === key ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Icon className="w-4 h-4" /> {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "orders" ? (
+        <MyOrders embedded />
+      ) : isLoading ? (
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">{[1, 2, 3, 4].map(i => <div key={i} className="h-56 rounded-xl bg-muted animate-pulse" />)}</div>
       ) : !products?.length ? (
         <div className="text-center py-20 text-muted-foreground">

@@ -57,17 +57,46 @@ export const Header: FC = () => {
     setLanguage(language === "th" ? "en" : "th");
   };
 
-  const memberLinks = [
-    { href: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard },
-    { href: "/reservations", label: t("nav.reservations"), icon: CalendarDays },
-    { href: "/book", label: t("nav.book"), icon: CalendarPlus },
-    { href: "/instructors", label: "ครูฝึก", icon: GraduationCap },
-    { href: "/membership-card", label: "บัตรสมาชิก", icon: QrCode },
-    { href: "/products", label: "ร้านค้าสโมสร", icon: ShoppingBag },
-    { href: "/my-orders", label: "คำสั่งซื้อของฉัน", icon: Package },
-    { href: "/services", label: "บริการอื่นๆ", icon: Sparkles },
-    { href: "/profile", label: t("nav.profile"), icon: User },
+  // Member menu, grouped by category (same structure as the desktop sidebar) so the
+  // mobile sheet shows the exact same items, with shop + orders sitting together.
+  const memberGroups = [
+    {
+      title: "ภาพรวม",
+      links: [
+        { href: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard },
+        { href: "/membership-card", label: "บัตรสมาชิก", icon: QrCode },
+      ],
+    },
+    {
+      title: "จองและบริการ",
+      links: [
+        { href: "/book", label: t("nav.book"), icon: CalendarPlus },
+        { href: "/reservations", label: t("nav.reservations"), icon: CalendarDays },
+        { href: "/instructors", label: "ครูฝึก", icon: GraduationCap },
+        { href: "/services", label: "บริการอื่นๆ", icon: Sparkles },
+      ],
+    },
+    {
+      // "คำสั่งซื้อของฉัน" now lives inside the ร้านค้าสโมสร page (a tab there),
+      // so it is no longer a separate menu item.
+      title: "ร้านค้าและการเงิน",
+      links: [
+        { href: "/products", label: "ร้านค้าสโมสร", icon: ShoppingBag },
+        { href: "/wallet", label: t("nav.wallet"), icon: Wallet },
+        { href: "/packages", label: t("nav.packages"), icon: Crown },
+      ],
+    },
+    {
+      title: "บัญชีและช่วยเหลือ",
+      links: [
+        { href: "/chat", label: t("nav.chat"), icon: MessageCircle },
+        { href: "/profile", label: t("nav.profile"), icon: User },
+      ],
+    },
   ];
+
+  // Flat list for roles that embed the member menu (e.g. instructors).
+  const memberLinks = memberGroups.flatMap((g) => g.links);
 
   const adminLinks = [
     { href: "/admin", label: t("nav.admin.dashboard"), icon: LayoutDashboard },
@@ -163,6 +192,8 @@ export const Header: FC = () => {
   ];
 
   const links = isAdmin ? adminLinks : isInstructor ? instructorLinks : isStaff ? staffLinks : memberLinks;
+  // Admins and members render as labelled groups; instructors/staff keep a flat list.
+  const navGroups = isAdmin ? adminGroups : (isInstructor || isStaff) ? null : memberGroups;
 
   const handleNavClick = () => setOpen(false);
 
@@ -207,7 +238,7 @@ export const Header: FC = () => {
 
             {/* Navigation */}
             <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-              {isAdmin ? adminGroups.map((group) => (
+              {navGroups ? navGroups.map((group) => (
                 <div key={group.title} className="space-y-1">
                   <div className="px-3 pt-3 pb-1 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
                     {group.title}

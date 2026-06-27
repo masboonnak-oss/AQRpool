@@ -22,7 +22,10 @@ const statusMap: Record<string, { label: string; cls: string; icon: any }> = {
 };
 const baht = (n: number) => `฿${n.toLocaleString("th-TH")}`;
 
-export const MyOrders: FC = () => {
+// `embedded` renders the orders list inside another page (e.g. the shop's
+// "คำสั่งซื้อของฉัน" tab): it drops the centered page wrapper and the duplicate
+// page heading, keeping just the export button + content.
+export const MyOrders: FC<{ embedded?: boolean }> = ({ embedded }) => {
   const [, navigate] = useLocation();
   const token = localStorage.getItem("pool_token");
   const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -56,9 +59,11 @@ export const MyOrders: FC = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h1 className="text-2xl font-display font-extrabold flex items-center gap-2"><Package className="w-6 h-6 text-primary" /> คำสั่งซื้อของฉัน</h1>
+    <div className={embedded ? "space-y-5" : "max-w-2xl mx-auto space-y-5"}>
+      <div className={`flex gap-3 ${embedded ? "justify-end" : "flex-col sm:flex-row sm:items-center justify-between"}`}>
+        {!embedded && (
+          <h1 className="text-2xl font-display font-extrabold flex items-center gap-2"><Package className="w-6 h-6 text-primary" /> คำสั่งซื้อของฉัน</h1>
+        )}
         <Button variant="outline" className="gap-1.5" onClick={exportOrders} disabled={!orders?.length}>
           <Download className="w-4 h-4" /> ดาวน์โหลดประวัติ
         </Button>

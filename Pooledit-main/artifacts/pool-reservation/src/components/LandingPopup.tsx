@@ -10,9 +10,6 @@ import {
 
 /* localStorage flag — set when the visitor ticks "don't show again". */
 const HIDE_KEY = "aquarich_landing_popup_hidden";
-/* routes where the welcome popup would get in the way (auth forms) */
-const SUPPRESS_ON = ["/login", "/register"];
-
 /**
  * Aquarich welcome popup — greets visitors on app open with the brand pitch and
  * the three primary actions (book / sign up / sign in). Copy comes from i18n, all
@@ -30,8 +27,8 @@ export const LandingPopup: FC = () => {
   // and only if the visitor hasn't opted out. Small delay lets the app settle.
   useEffect(() => {
     if (isLoading) return;
+    if (location !== "/") return;
     if (localStorage.getItem(HIDE_KEY) === "1") return;
-    if (SUPPRESS_ON.some((p) => location.startsWith(p))) return;
     const id = window.setTimeout(() => {
       localStorage.setItem(HIDE_KEY, "1");
       setOpen(true);

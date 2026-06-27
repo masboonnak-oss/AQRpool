@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Building2, QrCode, CheckCircle2, ChevronLeft } from "lucide-react";
+import { Upload, Building2, QrCode, CheckCircle2, ChevronLeft, Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Method = "bank_transfer" | "qr_payment";
@@ -28,11 +28,19 @@ export const Topup: FC = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [settings, setSettings] = useState<any>(null);
+  const [copied, setCopied] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`${baseUrl}/api/settings`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json()).then(setSettings).catch(() => {});
   }, []);
+
+  const copy = (value: string, key: string) => {
+    navigator.clipboard?.writeText(value).then(() => {
+      setCopied(key);
+      setTimeout(() => setCopied(null), 1500);
+    }).catch(() => {});
+  };
 
   const presets = [100, 200, 500, 1000, 2000, 5000];
 
@@ -86,14 +94,32 @@ export const Topup: FC = () => {
         <h1 className="text-2xl font-display font-extrabold text-gradient">{t("topup.title")}</h1>
       </div>
 
-      {/* Bank info */}
-      {settings && (settings.bankName || settings.promptpayNumber) && (
+      {/* Bank / payment account — full details for the member to transfer to */}
+      {settings && (settings.bankName || settings.bankAccountNumber || settings.bankAccountName || settings.promptpayNumber) && (
         <Card className="bg-primary/5 border-primary/20">
-          <CardContent className="p-4 space-y-1">
-            <p className="font-semibold text-sm">ข้อมูลการชำระเงิน</p>
-            {settings.bankName && <p className="text-sm text-muted-foreground">ธนาคาร: {settings.bankName} · {settings.bankAccountNumber}</p>}
-            {settings.bankAccountName && <p className="text-sm text-muted-foreground">ชื่อบัญชี: {settings.bankAccountName}</p>}
-            {settings.promptpayNumber && <p className="text-sm text-muted-foreground">PromptPay: {settings.promptpayNumber}</p>}
+          <CardContent className="p-4 space-y-3">
+            <p className="font-semibold text-sm flex items-center gap-1.5"><Building2 className="w-4 h-4 text-primary" /> โอนเงินมาที่บัญชีนี้</p>
+            <div className="space-y-2">
+              {[
+                { label: "ธนาคาร", value: settings.bankName, key: "bank", copyable: false },
+                { label: "เลขที่บัญชี", value: settings.bankAccountNumber, key: "acctno", copyable: true },
+                { label: "ชื่อบัญชี", value: settings.bankAccountName, key: "acctname", copyable: false },
+                { label: "PromptPay", value: settings.promptpayNumber, key: "promptpay", copyable: true },
+              ].filter((r) => r.value).map((r) => (
+                <div key={r.key} className="flex items-center justify-between gap-3 rounded-lg bg-background/70 px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="text-[11px] text-muted-foreground">{r.label}</p>
+                    <p className={cn("font-semibold truncate", r.copyable && "font-mono tracking-wide")}>{r.value}</p>
+                  </div>
+                  {r.copyable && (
+                    <Button variant="ghost" size="sm" className="shrink-0 gap-1.5 text-xs" onClick={() => copy(String(r.value), r.key)}>
+                      {copied === r.key ? <><Check className="w-3.5 h-3.5 text-emerald-600" /> คัดลอกแล้ว</> : <><Copy className="w-3.5 h-3.5" /> คัดลอก</>}
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">โอนตามยอดที่ต้องการเติม แล้วอัปสลิปด้านล่าง — ระบบจะตรวจสลิปให้อัตโนมัติ</p>
           </CardContent>
         </Card>
       )}

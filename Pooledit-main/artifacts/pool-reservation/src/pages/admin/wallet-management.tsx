@@ -182,7 +182,7 @@ export const AdminWalletManagement: FC = () => {
 
       {/* Detail dialog */}
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>รายละเอียดการเติมเงิน</DialogTitle></DialogHeader>
           {selected && (
             <div className="space-y-4">
@@ -192,6 +192,30 @@ export const AdminWalletManagement: FC = () => {
                 <div><p className="text-muted-foreground">วิธีชำระ</p><p>{methodLabel[selected.method]}</p></div>
                 <div><p className="text-muted-foreground">สถานะ</p>{statusBadge(selected.status)}</div>
               </div>
+
+              {/* Approve/Reject up top so the admin acts without scrolling past the slip. */}
+              {selected.status === "pending" && (
+                <div className="sticky top-0 z-10 -mx-6 px-6 py-3 bg-background/95 backdrop-blur border-y space-y-3">
+                  {selected.slipVerdict && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <ScanLine className="w-4 h-4 text-primary" /> ระบบตรวจสลิป: <VerdictBadge v={selected.slipVerdict} />
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => handleAction("approve")} disabled={processing}>
+                      <CheckCircle className="w-4 h-4 mr-2" />อนุมัติ
+                    </Button>
+                    <Button variant="destructive" className="flex-1" onClick={() => handleAction("reject")} disabled={processing}>
+                      <XCircle className="w-4 h-4 mr-2" />ปฏิเสธ
+                    </Button>
+                  </div>
+                  <div>
+                    <Label className="text-xs">หมายเหตุการตรวจสอบ (ไม่บังคับ)</Label>
+                    <Textarea value={reviewNote} onChange={e => setReviewNote(e.target.value)} placeholder="หมายเหตุ..." rows={2} className="mt-1" />
+                  </div>
+                </div>
+              )}
+
               {selected.note && <div><p className="text-sm text-muted-foreground">หมายเหตุ:</p><p className="text-sm">{selected.note}</p></div>}
 
               {selected.slipVerdict && (
@@ -226,22 +250,6 @@ export const AdminWalletManagement: FC = () => {
                 <div>
                   <p className="text-sm text-muted-foreground mb-2">สลิปการโอน:</p>
                   <img src={selected.slipImageUrl} alt="slip" className="w-full max-h-64 object-contain rounded-lg border" />
-                </div>
-              )}
-              {selected.status === "pending" && (
-                <div className="space-y-3">
-                  <div>
-                    <Label>หมายเหตุการตรวจสอบ (ไม่บังคับ)</Label>
-                    <Textarea value={reviewNote} onChange={e => setReviewNote(e.target.value)} placeholder="หมายเหตุ..." rows={2} className="mt-1" />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => handleAction("approve")} disabled={processing}>
-                      <CheckCircle className="w-4 h-4 mr-2" />อนุมัติ
-                    </Button>
-                    <Button variant="destructive" className="flex-1" onClick={() => handleAction("reject")} disabled={processing}>
-                      <XCircle className="w-4 h-4 mr-2" />ปฏิเสธ
-                    </Button>
-                  </div>
                 </div>
               )}
             </div>

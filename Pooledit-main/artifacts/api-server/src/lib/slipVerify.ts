@@ -9,6 +9,9 @@
 // so a top-up is never blocked by a bad image — the admin just falls back to manual review.
 
 import { createRequire } from "node:module";
+import { existsSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { DateTime } from "luxon";
 import { logger } from "./logger.js";
 
@@ -17,6 +20,9 @@ import { logger } from "./logger.js";
 const require = createRequire(import.meta.url);
 
 const OCR_LANG = process.env.OCR_LANG || "tha+eng";
+const OCR_LANG_FILES = OCR_LANG.split("+")
+  .map((lang) => `${lang.trim()}.traineddata`)
+  .filter((name) => name !== ".traineddata");
 const MERCHANT_NAME = (process.env.MERCHANT_ACCOUNT_NAME || "").trim();
 const MERCHANT_NUMBER = (process.env.MERCHANT_ACCOUNT_NUMBER || "").trim();
 
@@ -48,7 +54,8 @@ function parseRef(raw: string): string | null {
 
 async function decodeMiniQR(buffer: Buffer): Promise<{ ok: boolean; raw: string | null; transId: string | null }> {
   try {
-    const Jimp = require("jimp");
+    const JimpModule = require("jimp");
+    const Jimp = JimpModule.Jimp ?? JimpModule.default ?? JimpModule;
     const jsQR = require("jsqr");
     const crypto = require("node:crypto") as typeof import("node:crypto");
     const image = await Jimp.read(buffer);
@@ -69,11 +76,28 @@ async function decodeMiniQR(buffer: Buffer): Promise<{ ok: boolean; raw: string 
 }
 
 // ── OCR (Tesseract.js) — single lazily-created shared worker ───────────────
+function findLocalLangPath(): string | null {
+  const explicit = (process.env.OCR_LANG_PATH || process.env.TESSDATA_PREFIX || "").trim();
+  if (explicit) return explicit;
+
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const candidates = [
+    process.cwd(),
+    path.resolve(process.cwd(), "artifacts/api-server"),
+    path.resolve(here, ".."),
+    path.resolve(here, "../.."),
+    path.resolve(here, "../../artifacts/api-server"),
+  ];
+  return candidates.find((dir) => OCR_LANG_FILES.every((file) => existsSync(path.join(dir, file)))) ?? null;
+}
+
 let workerPromise: Promise<any> | null = null;
 async function getOcrWorker(): Promise<any> {
   if (!workerPromise) {
     const { createWorker } = require("tesseract.js");
-    workerPromise = createWorker(OCR_LANG).catch((err: unknown) => {
+    const langPath = findLocalLangPath();
+    const workerOptions = langPath ? { langPath, cachePath: langPath, gzip: false } : undefined;
+    workerPromise = (workerOptions ? createWorker(OCR_LANG, undefined, workerOptions) : createWorker(OCR_LANG)).catch((err: unknown) => {
       workerPromise = null;
       throw err;
     });

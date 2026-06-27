@@ -3,10 +3,10 @@ import fs from "fs/promises";
 import path from "path";
 import { eq } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
-import { authenticate, requireSuperAdmin } from "../middlewares/auth.js";
-import { backupEncryptionStatus, getBackupFilePath, listBackupFiles, readBackupFile, runFullBackup, listFullBackups } from "../lib/backup.js";
-import { dataDirs } from "../lib/dataPaths.js";
-import { readEncryptedFile } from "../lib/cryptoVault.js";
+import { authenticate, requireSuperAdmin } from "../../middlewares/auth.js";
+import { backupEncryptionStatus, getBackupFilePath, listBackupFiles, readBackupFile, runFullBackup, listFullBackups } from "../../lib/backup.js";
+import { dataDirs } from "../../lib/dataPaths.js";
+import { readEncryptedFile } from "../../lib/cryptoVault.js";
 
 const router = Router();
 

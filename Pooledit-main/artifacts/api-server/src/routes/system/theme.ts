@@ -3,7 +3,7 @@
 import { Router } from "express";
 import { db, appThemeTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { authenticate, requireAdmin } from "../middlewares/auth.js";
+import { authenticate, requireAdmin } from "../../middlewares/auth.js";
 
 const router = Router();
 

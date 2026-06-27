@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { db, settingsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { authenticate, requireAdmin } from "../middlewares/auth.js";
-import { attachBranch, newRowBranch } from "../middlewares/branch.js";
+import { authenticate, requireAdmin } from "../../middlewares/auth.js";
+import { attachBranch, newRowBranch } from "../../middlewares/branch.js";
 
 const router = Router();
 

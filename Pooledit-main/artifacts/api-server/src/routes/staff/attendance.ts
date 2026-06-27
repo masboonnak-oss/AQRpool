@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { db, attendanceTable, usersTable } from "@workspace/db";
 import { eq, and, isNull, gte, lte, desc, sql, inArray } from "drizzle-orm";
-import { authenticate, requireStaff, requireAdmin } from "../middlewares/auth.js";
-import { attachBranch, branchEq, newRowBranch } from "../middlewares/branch.js";
+import { authenticate, requireStaff, requireAdmin } from "../../middlewares/auth.js";
+import { attachBranch, branchEq, newRowBranch } from "../../middlewares/branch.js";
 
 // Staff work-time tracking ("ระบบลงเวลางาน"). Staff (admin/super_admin/instructor)
 // clock in/out for themselves; admins additionally see who is on duty and pull

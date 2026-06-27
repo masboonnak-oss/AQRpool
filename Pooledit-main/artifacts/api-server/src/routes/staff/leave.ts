@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { db, leaveRequestsTable, usersTable } from "@workspace/db";
 import { eq, and, desc, sql } from "drizzle-orm";
-import { authenticate, requireStaff, requireAdmin, isAdminRole } from "../middlewares/auth.js";
-import { attachBranch, branchEq, newRowBranch } from "../middlewares/branch.js";
+import { authenticate, requireStaff, requireAdmin, isAdminRole } from "../../middlewares/auth.js";
+import { attachBranch, branchEq, newRowBranch } from "../../middlewares/branch.js";
 
 // Staff leave requests ("ระบบลางาน"). Staff submit; admins approve/reject.
 const router = Router();

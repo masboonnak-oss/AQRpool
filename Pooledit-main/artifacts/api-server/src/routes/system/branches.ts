@@ -1,8 +1,8 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { db, branchesTable, usersTable } from "@workspace/db";
 import { eq, sql, asc } from "drizzle-orm";
-import { authenticate } from "../middlewares/auth.js";
-import { attachBranch } from "../middlewares/branch.js";
+import { authenticate } from "../../middlewares/auth.js";
+import { attachBranch } from "../../middlewares/branch.js";
 
 // Franchise branches ("จัดการสาขา"). super_admin manages every branch; other
 // staff can read only their own branch (for header display / switcher hiding).

@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { and, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import { auditLogsTable, db, usersTable } from "@workspace/db";
-import { authenticate, requireSuperAdmin } from "../middlewares/auth.js";
-import { memberCode } from "../lib/memberCode.js";
+import { authenticate, requireSuperAdmin } from "../../middlewares/auth.js";
+import { memberCode } from "../../lib/memberCode.js";
 
 const router = Router();
 

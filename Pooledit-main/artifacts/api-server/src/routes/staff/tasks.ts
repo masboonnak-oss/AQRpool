@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { db, staffTasksTable, usersTable } from "@workspace/db";
 import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
-import { authenticate, isStaffRole, requireAdmin, requireStaff } from "../middlewares/auth.js";
-import { attachBranch, branchEq, newRowBranch } from "../middlewares/branch.js";
+import { authenticate, isStaffRole, requireAdmin, requireStaff } from "../../middlewares/auth.js";
+import { attachBranch, branchEq, newRowBranch } from "../../middlewares/branch.js";
 
 const router = Router();
 const MAX_PHOTO_CHARS = 7_500_000; // roughly 5.5MB binary as base64; API body limit is 12MB.

@@ -2,10 +2,10 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db, instructorsTable, reservationsTable, instructorAvailabilityTable, usersTable, settingsTable, membershipPackagesTable } from "@workspace/db";
 import { eq, ilike, or, sql, and, inArray, isNotNull, asc, gte, lte, ne } from "drizzle-orm";
-import { authenticate, requireAdmin } from "../middlewares/auth.js";
-import { attachBranch, branchEq, newRowBranch } from "../middlewares/branch.js";
-import { consumeUse, refundUseForReservation, NoQuotaError } from "../lib/packageUsage.js";
-import { initMemberFolder } from "../lib/memberLog.js";
+import { authenticate, requireAdmin } from "../../middlewares/auth.js";
+import { attachBranch, branchEq, newRowBranch } from "../../middlewares/branch.js";
+import { consumeUse, refundUseForReservation, NoQuotaError } from "../../lib/packageUsage.js";
+import { initMemberFolder } from "../../lib/memberLog.js";
 
 const router = Router();
 

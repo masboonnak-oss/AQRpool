@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db, devTicketsTable, devTicketMessagesTable, usersTable } from "@workspace/db";
 import { eq, and, desc, sql } from "drizzle-orm";
-import { authenticate, requireAdmin } from "../middlewares/auth.js";
+import { authenticate, requireAdmin } from "../../middlewares/auth.js";
 
 // ศูนย์ช่วยเหลือ (Help Center): admins open tickets to reach the DEV team.
 // super_admin IS the DEV — they see every ticket and reply in-app; a regular

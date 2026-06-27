@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { authenticate, requireDev } from "../middlewares/auth.js";
-import { getStatus, pushChanges, pullChanges, listFolders, setRemote } from "../lib/git.js";
-import { logger } from "../lib/logger.js";
+import { authenticate, requireDev } from "../../middlewares/auth.js";
+import { getStatus, pushChanges, pullChanges, listFolders, setRemote } from "../../lib/git.js";
+import { logger } from "../../lib/logger.js";
 
 // System update panel — pull/push patches via GitHub. Developer (dev) role only.
 const router = Router();

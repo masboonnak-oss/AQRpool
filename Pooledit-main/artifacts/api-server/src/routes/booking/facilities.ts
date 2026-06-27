@@ -1,10 +1,10 @@
 import { Router } from "express";
 import { db, facilitiesTable, memberAddonsTable, walletsTable, transactionsTable } from "@workspace/db";
 import { eq, sql, desc } from "drizzle-orm";
-import { authenticate, requireAdmin } from "../middlewares/auth.js";
-import { attachBranch, branchEq, newRowBranch } from "../middlewares/branch.js";
-import { getOrCreateWallet } from "./wallet.js";
-import { appendMemberLog } from "../lib/memberLog.js";
+import { authenticate, requireAdmin } from "../../middlewares/auth.js";
+import { attachBranch, branchEq, newRowBranch } from "../../middlewares/branch.js";
+import { getOrCreateWallet } from "../finance/wallet.js";
+import { appendMemberLog } from "../../lib/memberLog.js";
 
 const router = Router();
 

@@ -3,11 +3,11 @@ import fs from "fs/promises";
 import path from "path";
 import { db, aiChatMessagesTable, usersTable } from "@workspace/db";
 import { eq, asc, inArray } from "drizzle-orm";
-import { authenticate } from "../middlewares/auth.js";
+import { authenticate } from "../../middlewares/auth.js";
 import type { Request, Response, NextFunction } from "express";
-import { dataDirs } from "../lib/dataPaths.js";
-import { appendMemberLog } from "../lib/memberLog.js";
-import { readEncryptedFile } from "../lib/cryptoVault.js";
+import { dataDirs } from "../../lib/dataPaths.js";
+import { appendMemberLog } from "../../lib/memberLog.js";
+import { readEncryptedFile } from "../../lib/cryptoVault.js";
 
 const router = Router();
 router.use(authenticate); // every route needs a signed-in user; admin routes add requireSuperAdmin

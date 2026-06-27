@@ -1,10 +1,10 @@
 import { Router } from "express";
 import { db, chatTicketsTable, chatMessagesTable, usersTable } from "@workspace/db";
 import { eq, desc, and, sql } from "drizzle-orm";
-import { authenticate, requireAdmin } from "../middlewares/auth.js";
-import { attachBranch, branchEq, newRowBranch } from "../middlewares/branch.js";
-import { maybeAiReply } from "../lib/ai-assistant.js";
-import { appendMemberLog } from "../lib/memberLog.js";
+import { authenticate, requireAdmin } from "../../middlewares/auth.js";
+import { attachBranch, branchEq, newRowBranch } from "../../middlewares/branch.js";
+import { maybeAiReply } from "../../lib/ai-assistant.js";
+import { appendMemberLog } from "../../lib/memberLog.js";
 
 const router = Router();
 

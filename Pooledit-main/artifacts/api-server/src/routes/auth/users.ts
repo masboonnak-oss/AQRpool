@@ -2,11 +2,11 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db, usersTable, memberPackagesTable, membershipPackagesTable, packageUsagesTable, reservationsTable } from "@workspace/db";
 import { eq, or, ilike, sql, and, inArray, gte } from "drizzle-orm";
-import { authenticate, requireAdmin, isAdminRole } from "../middlewares/auth.js";
-import { attachBranch, branchEq, newRowBranch } from "../middlewares/branch.js";
-import { backupUsers, formatBackupUser } from "../lib/backup.js";
-import { memberCode } from "../lib/memberCode.js";
-import { initMemberFolder } from "../lib/memberLog.js";
+import { authenticate, requireAdmin, isAdminRole } from "../../middlewares/auth.js";
+import { attachBranch, branchEq, newRowBranch } from "../../middlewares/branch.js";
+import { backupUsers, formatBackupUser } from "../../lib/backup.js";
+import { memberCode } from "../../lib/memberCode.js";
+import { initMemberFolder } from "../../lib/memberLog.js";
 
 const router = Router();
 

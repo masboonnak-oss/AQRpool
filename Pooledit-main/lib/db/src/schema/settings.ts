@@ -21,6 +21,8 @@ export const settingsTable = pgTable("settings", {
   bankAccountNumber: text("bank_account_number"),
   bankName: text("bank_name"),
   promptpayNumber: text("promptpay_number"),
+  // Auto-approve a top-up when the slip reader is confident (verdict = "match").
+  topupAutoApprove: boolean("topup_auto_approve").notNull().default(false),
   branchId: integer("branch_id").default(1),
 });
 

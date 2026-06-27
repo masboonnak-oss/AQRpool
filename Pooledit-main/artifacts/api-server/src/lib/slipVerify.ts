@@ -164,17 +164,21 @@ function extractTimestampISO(text: string): string | null {
   return null;
 }
 
-function matchRecipient(text: string): boolean | null {
-  if (!MERCHANT_NAME && !MERCHANT_NUMBER) return null; // not configured -> don't check
+function matchRecipient(text: string, name: string, num: string): boolean | null {
+  if (!name && !num) return null; // not configured -> don't check
   const hay = norm(text);
-  const byName = MERCHANT_NAME.length > 0 && hay.includes(norm(MERCHANT_NAME));
-  const tail = MERCHANT_NUMBER.replace(/\D/g, "").slice(-4);
+  const byName = name.length > 0 && hay.includes(norm(name));
+  const tail = num.replace(/\D/g, "").slice(-4);
   const byNumber = tail.length === 4 && hay.replace(/\D/g, "").includes(tail);
   return byName || byNumber;
 }
 
-/** Run QR + OCR extraction over a slip image. Never throws. */
-export async function extractSlip(buffer: Buffer): Promise<SlipExtract> {
+/**
+ * Run QR + OCR extraction over a slip image. Never throws.
+ * `merchant` is the shop's receiving account (from settings) used to check the slip's
+ * recipient; falls back to the MERCHANT_ACCOUNT_* env vars when not provided.
+ */
+export async function extractSlip(buffer: Buffer, merchant?: { name?: string | null; number?: string | null }): Promise<SlipExtract> {
   const warnings: string[] = [];
   const qr = await decodeMiniQR(buffer);
   const text = await ocrRecognize(buffer);
@@ -185,7 +189,9 @@ export async function extractSlip(buffer: Buffer): Promise<SlipExtract> {
   const paidAtISO = extractTimestampISO(text);
   if (!paidAtISO) warnings.push("timestamp_not_detected");
 
-  const recipientMatched = matchRecipient(text);
+  const merchantName = (merchant?.name ?? MERCHANT_NAME ?? "").trim();
+  const merchantNumber = (merchant?.number ?? MERCHANT_NUMBER ?? "").trim();
+  const recipientMatched = matchRecipient(text, merchantName, merchantNumber);
   if (recipientMatched === false) warnings.push("recipient_not_matched");
 
   if (!qr.ok) warnings.push("qr_decode_failed");

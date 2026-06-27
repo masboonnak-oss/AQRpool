@@ -47,6 +47,7 @@ router.patch("/", authenticate, requireAdmin, attachBranch, async (req, res) => 
       bankAccountNumber,
       bankName,
       promptpayNumber,
+      topupAutoApprove,
     } = req.body;
 
     const updates: Partial<typeof settingsTable.$inferInsert> = {};
@@ -67,6 +68,7 @@ router.patch("/", authenticate, requireAdmin, attachBranch, async (req, res) => 
     if (bankAccountNumber !== undefined) updates.bankAccountNumber = bankAccountNumber;
     if (bankName !== undefined) updates.bankName = bankName;
     if (promptpayNumber !== undefined) updates.promptpayNumber = promptpayNumber;
+    if (topupAutoApprove !== undefined) updates.topupAutoApprove = topupAutoApprove;
 
     const [updated] = await db
       .update(settingsTable)

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import fs from "fs/promises";
 import path from "path";
-import { db, topupRequestsTable, walletsTable, transactionsTable, usersTable } from "@workspace/db";
+import { db, topupRequestsTable, walletsTable, transactionsTable, usersTable, settingsTable } from "@workspace/db";
 import { eq, desc, sql, and, ne } from "drizzle-orm";
 import { authenticate, requireAdmin } from "../middlewares/auth.js";
 import { attachBranch, branchEq, newRowBranch } from "../middlewares/branch.js";
@@ -14,17 +14,48 @@ import { logger } from "../lib/logger.js";
 
 const router = Router();
 
+// Credit a top-up's amount to the member's wallet and mark it approved. Used by both
+// the admin Approve action and the automatic "verdict = match" path. Guards on the
+// current status so a top-up is never credited twice.
+async function creditAndApprove(requestId: number, reviewerId: number | null, reviewNote: string) {
+  const [request] = await db.select().from(topupRequestsTable).where(eq(topupRequestsTable.id, requestId)).limit(1);
+  if (!request || request.status !== "pending") return null;
+
+  const wallet = await getOrCreateWallet(request.userId);
+  const newBalance = Number(wallet.balance) + Number(request.amount);
+  await db.update(walletsTable).set({ balance: String(newBalance), updatedAt: new Date() }).where(eq(walletsTable.userId, request.userId));
+
+  await db.insert(transactionsTable).values({
+    userId: request.userId,
+    amount: String(request.amount),
+    type: "topup",
+    description: `เติมเงินผ่าน ${request.method} (${reviewerId ? "อนุมัติโดยแอดมิน" : "อนุมัติอัตโนมัติ: สลิปตรง"})`,
+    status: "completed",
+    referenceId: request.id,
+    branchId: request.branchId,
+  });
+
+  const [updated] = await db.update(topupRequestsTable)
+    .set({ status: "approved", reviewedBy: reviewerId, reviewNote, reviewedAt: new Date() })
+    .where(and(eq(topupRequestsTable.id, requestId), eq(topupRequestsTable.status, "pending")))
+    .returning();
+  return updated ?? null;
+}
+
 // Read the slip image, then auto-fill the verification columns so the admin sees a
-// verdict (ตรง / ตรวจสอบ / ซ้ำ / อ่านไม่ออก) without opening the slip. Best-effort and
-// runs in the background — never blocks or fails the member's top-up submission.
-async function verifySlipInBackground(requestId: number, dataUrl: unknown, requestedAmount: number): Promise<void> {
+// verdict (ตรง / ตรวจสอบ / ซ้ำ / อ่านไม่ออก) without opening the slip. If the shop turned on
+// auto-approve and the verdict is "match", the top-up is credited automatically.
+// Best-effort and runs in the background — never blocks the member's submission.
+async function verifySlipInBackground(requestId: number, branchId: number, dataUrl: unknown, requestedAmount: number): Promise<void> {
   try {
     if (typeof dataUrl !== "string") return;
     const m = /^data:image\/[a-zA-Z0-9.+-]+;base64,(.+)$/s.exec(dataUrl);
     if (!m) return;
     const buffer = Buffer.from(m[1], "base64");
 
-    const ex = await extractSlip(buffer);
+    // Merchant account + auto-approve toggle come from the branch's settings.
+    const [settings] = await db.select().from(settingsTable).where(eq(settingsTable.branchId, branchId)).limit(1);
+    const ex = await extractSlip(buffer, { name: settings?.bankAccountName, number: settings?.bankAccountNumber });
 
     // Duplicate: the same slip reference already used by another non-rejected request.
     let duplicate = false;
@@ -52,6 +83,11 @@ async function verifySlipInBackground(requestId: number, dataUrl: unknown, reque
       slipWarnings: JSON.stringify(duplicate ? [...ex.warnings, "duplicate_slip"] : ex.warnings),
       slipCheckedAt: new Date(),
     }).where(eq(topupRequestsTable.id, requestId));
+
+    // Opt-in automatic approval for confident, non-duplicate matches.
+    if (verdict === "match" && settings?.topupAutoApprove) {
+      await creditAndApprove(requestId, null, "อนุมัติอัตโนมัติ: สลิปตรงกับยอดและบัญชีร้าน");
+    }
   } catch (err) {
     logger.warn({ err, requestId }, "slip verification failed");
   }
@@ -97,7 +133,7 @@ router.post("/", authenticate, attachBranch, async (req, res) => {
     await saveSlipFile(slipImageUrl, request.id, req.user!.userId);
 
     // Auto-read the slip in the background (QR + OCR) to assist admin review.
-    void verifySlipInBackground(request.id, slipImageUrl, Number(request.amount));
+    void verifySlipInBackground(request.id, request.branchId ?? 1, slipImageUrl, Number(request.amount));
 
     await appendMemberLog({ userId: req.user!.userId }, "activity", {
       action: "topup_request", amount: Number(request.amount), method,
@@ -171,26 +207,8 @@ router.post("/:id/approve", authenticate, requireAdmin, attachBranch, async (req
       return res.status(403).json({ error: "ไม่สามารถอนุมัติคำขอต่างสาขาได้" });
     }
 
-    const wallet = await getOrCreateWallet(request.userId);
-    const newBalance = Number(wallet.balance) + Number(request.amount);
-
-    await db.update(walletsTable).set({ balance: String(newBalance), updatedAt: new Date() }).where(eq(walletsTable.userId, request.userId));
-
-    await db.insert(transactionsTable).values({
-      userId: request.userId,
-      amount: String(request.amount),
-      type: "topup",
-      description: `เติมเงินผ่าน ${request.method} (อนุมัติโดยแอดมิน)`,
-      status: "completed",
-      referenceId: id,
-      branchId: request.branchId,
-    });
-
-    const [updated] = await db
-      .update(topupRequestsTable)
-      .set({ status: "approved", reviewedBy: req.user!.userId, reviewNote, reviewedAt: new Date() })
-      .where(eq(topupRequestsTable.id, id))
-      .returning();
+    const updated = await creditAndApprove(id, req.user!.userId, reviewNote);
+    if (!updated) return res.status(400).json({ error: "Already processed" });
 
     return res.json({ ...updated, amount: Number(updated.amount), createdAt: updated.createdAt.toISOString(), reviewedAt: updated.reviewedAt?.toISOString() || null });
   } catch {

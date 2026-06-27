@@ -143,6 +143,7 @@ export const Topup: FC = () => {
                 <span className="text-sm">คลิกเพื่ออัปโหลดสลิป</span>
               </button>
             )}
+            <p className="text-xs text-muted-foreground">ระบบจะอ่านสลิปอัตโนมัติ — อัปสลิปที่เห็น QR และยอดเงินชัดเจน จะตรวจสอบและอนุมัติได้ไวขึ้น</p>
           </div>
 
           <div className="space-y-2">

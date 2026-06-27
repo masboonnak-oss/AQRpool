@@ -32,6 +32,7 @@ type SettingsForm = {
   bankAccountNumber: string;
   bankName: string;
   promptpayNumber: string;
+  topupAutoApprove: boolean;
 };
 
 const Section = ({ icon, title, description, children }: { icon: React.ReactNode; title: string; description: string; children: React.ReactNode }) => (
@@ -85,6 +86,7 @@ export function AdminSettings() {
     maxAdvanceDays: 30, slotDurationMinutes: 60, bookingPricePerSession: 0,
     lineUrl: "", contactPhone: "", contactEmail: "",
     bankAccountName: "", bankAccountNumber: "", bankName: "", promptpayNumber: "",
+    topupAutoApprove: false,
   });
 
   useEffect(() => {
@@ -108,6 +110,7 @@ export function AdminSettings() {
         bankAccountNumber: d.bankAccountNumber ?? "",
         bankName: d.bankName ?? "",
         promptpayNumber: d.promptpayNumber ?? "",
+        topupAutoApprove: d.topupAutoApprove ?? false,
       });
     }
   }, [data]);
@@ -207,12 +210,19 @@ export function AdminSettings() {
             <Input value={form.bankAccountNumber} onChange={e => set("bankAccountNumber", e.target.value)} placeholder="xxx-x-xxxxx-x" />
           </Field>
         </div>
-        <Field label="ชื่อบัญชี">
+        <Field label="ชื่อบัญชี" hint="ใช้เป็นบัญชีร้านที่ระบบอ่านสลิปจะตรวจว่าผู้รับเงินตรงไหม">
           <Input value={form.bankAccountName} onChange={e => set("bankAccountName", e.target.value)} placeholder="บริษัท อะควาริช จำกัด" />
         </Field>
         <Field label="เบอร์ PromptPay" hint="เบอร์โทรหรือเลขบัตรประชาชนสำหรับ PromptPay">
           <Input value={form.promptpayNumber} onChange={e => set("promptpayNumber", e.target.value)} placeholder="0XX-XXX-XXXX" />
         </Field>
+        <ToggleRow
+          label="อนุมัติเติมเงินอัตโนมัติเมื่อสลิปตรง"
+          description="เปิด = เมื่อระบบอ่านสลิปแล้วยอด+ผู้รับตรงและไม่ซ้ำ จะเติมเงินให้ทันที / ปิด = ให้แอดมินกดอนุมัติเอง (ปลอดภัยกว่า)"
+          checked={form.topupAutoApprove}
+          onCheckedChange={v => set("topupAutoApprove", v)}
+          testId="toggle-topup-autoapprove"
+        />
       </Section>
 
       {/* Contact / LINE */}

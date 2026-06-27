@@ -8,10 +8,13 @@ import { ensureDataDirs } from "./lib/dataPaths.js";
 import { corsOptions, intrusionGuard, noStoreForSensitiveRoutes, rateLimit, securityHeaders } from "./middlewares/security.js";
 import { auditRequests } from "./lib/audit.js";
 import { assertDataEncryptionReady } from "./lib/cryptoVault.js";
+import { runMigrations } from "./lib/migrate.js";
 
 await ensureDataDirs();
 await ensureBackupFolder();
 assertDataEncryptionReady();
+// Apply any pending DB migrations so a deploy updates the schema automatically.
+await runMigrations();
 
 const app: Express = express();
 

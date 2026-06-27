@@ -7,5 +7,17 @@
 # corepack's pinned package-manager binary cache (machine/platform-local)
 **/.corepack/
 
-# vite dev-server logs
-**/vite-*.log
+# runtime logs and local archives — code only, no logs/zips in the repo
+*.log
+*.zip
+
+# scratch / pasted notes folder (vite @assets alias points here but nothing imports it)
+attached_assets/
+
+# Brand-research / scratch workspace at the repo root — NOT the deployable app.
+# ~3 GB and contains its own .run-logs secrets (jwt-secret.txt, smtp.txt); never commit.
+aqua_rich/
+*.rar
+
+# Editor settings
+.vscode/

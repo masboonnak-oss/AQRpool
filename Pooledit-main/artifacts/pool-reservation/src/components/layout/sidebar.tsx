@@ -218,8 +218,8 @@ export const Sidebar: FC = () => {
   const avatarUrl = (user as any)?.profileImageUrl;
 
   return (
-    <aside className="hidden md:flex w-64 flex-col bg-sidebar border-r border-sidebar-border h-[100dvh] sticky top-0">
-      <div className="p-4 border-b border-sidebar-border">
+    <aside className="hidden md:flex w-64 flex-col bg-sidebar/95 border-r border-primary/20 shadow-[10px_0_30px_-28px_hsl(var(--glow)/0.45)] h-[100dvh] sticky top-0 backdrop-blur">
+      <div className="p-4 border-b border-primary/15">
         <BrandMark size="md" tagline />
       </div>
 
@@ -236,12 +236,12 @@ export const Sidebar: FC = () => {
               return (
                 <Link key={link.href} href={link.href}>
                   <div className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer",
+                    "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 cursor-pointer",
                     isActive
-                      ? "bg-brand text-white shadow-md shadow-[hsl(var(--glow)/0.35)]"
+                      ? "bg-gold text-primary-foreground shadow-md shadow-[hsl(var(--gold)/0.32)]"
                       : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:translate-x-0.5"
                   )}>
-                    <div className={cn("p-1 rounded-lg transition-colors", isActive ? "bg-white/20" : "")}>
+                    <div className={cn("p-1 rounded-lg transition-colors", isActive ? "bg-white/25" : "bg-primary/10 text-primary")}>
                       <Icon className="w-4 h-4" />
                     </div>
                     <span className="flex-1">{link.label}</span>
@@ -261,12 +261,12 @@ export const Sidebar: FC = () => {
           return (
             <Link key={link.href} href={link.href}>
               <div className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer",
+                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 cursor-pointer",
                 isActive
-                  ? "bg-brand text-white shadow-md shadow-[hsl(var(--glow)/0.35)]"
+                  ? "bg-gold text-primary-foreground shadow-md shadow-[hsl(var(--gold)/0.32)]"
                   : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:translate-x-0.5"
               )}>
-                <div className={cn("p-1 rounded-lg transition-colors", isActive ? "bg-white/20" : "")}>
+                <div className={cn("p-1 rounded-lg transition-colors", isActive ? "bg-white/25" : "bg-primary/10 text-primary")}>
                   <Icon className="w-4 h-4" />
                 </div>
                 <span className="flex-1">{link.label}</span>
@@ -281,7 +281,7 @@ export const Sidebar: FC = () => {
         })}
       </nav>
 
-      <div className="p-4 border-t border-sidebar-border space-y-4">
+      <div className="p-4 border-t border-primary/15 space-y-4">
         {user && (
           <div className="flex items-center gap-3 px-3">
             <div className="w-9 h-9 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center shrink-0 overflow-hidden ring-2 ring-primary/20">

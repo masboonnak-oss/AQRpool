@@ -225,7 +225,7 @@ export const Header: FC = () => {
   };
 
   return (
-    <header className="h-16 border-b border-border bg-card/80 backdrop-blur-sm flex items-center justify-between px-4 md:px-6 sticky top-0 z-30">
+    <header className="h-16 border-b border-primary/20 bg-card/88 shadow-sm shadow-[hsl(var(--glow)/0.08)] backdrop-blur-md flex items-center justify-between px-4 md:px-6 sticky top-0 z-30">
       {/* Mobile hamburger + brand */}
       <div className="flex items-center gap-1 md:hidden">
         <Sheet open={open} onOpenChange={setOpen}>
@@ -273,9 +273,9 @@ export const Header: FC = () => {
                         <div
                           onClick={handleNavClick}
                           className={cn(
-                            "flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors cursor-pointer",
+                            "flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer",
                             isActive
-                              ? "bg-primary text-primary-foreground"
+                              ? "bg-gold text-primary-foreground shadow-sm"
                               : "text-foreground hover:bg-accent hover:text-accent-foreground"
                           )}
                           data-testid={`link-mobile-${link.href.replace(/\//g, "-")}`}
@@ -296,9 +296,9 @@ export const Header: FC = () => {
                     <div
                       onClick={handleNavClick}
                       className={cn(
-                        "flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors cursor-pointer",
+                        "flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer",
                         isActive
-                          ? "bg-primary text-primary-foreground"
+                          ? "bg-gold text-primary-foreground shadow-sm"
                           : "text-foreground hover:bg-accent hover:text-accent-foreground"
                       )}
                       data-testid={`link-mobile-${link.href.replace(/\//g, "-")}`}

@@ -27,15 +27,17 @@ const MobileBottomNav: FC = () => {
   ];
 
   return (
-    <nav className="md:hidden fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/85 pb-[env(safe-area-inset-bottom)]">
+    <nav className="md:hidden fixed inset-x-0 bottom-0 z-40 border-t border-primary/20 bg-card/95 shadow-[0_-10px_30px_-22px_hsl(var(--glow)/0.55)] backdrop-blur supports-[backdrop-filter]:bg-card/85 pb-[env(safe-area-inset-bottom)]">
       <div className="grid grid-cols-5">
         {links.map((link) => {
           const active = location === link.href;
           const Icon = link.icon;
           return (
             <Link key={link.href} href={link.href}>
-              <div className={cn("flex h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium", active ? "text-primary" : "text-muted-foreground")}>
-                <Icon className="h-5 w-5" />
+              <div className={cn("flex h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-bold transition-colors", active ? "text-primary-foreground" : "text-muted-foreground")}>
+                <span className={cn("flex h-7 w-9 items-center justify-center rounded-full transition-all", active ? "bg-gold shadow-sm shadow-[hsl(var(--gold)/0.35)]" : "hover:bg-accent")}>
+                  <Icon className="h-5 w-5" />
+                </span>
                 <span>{link.label}</span>
               </div>
             </Link>

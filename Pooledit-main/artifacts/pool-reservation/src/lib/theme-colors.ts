@@ -10,7 +10,7 @@ const hsl = (h: number, s: number, l: number) => `${((Math.round(h) % 360) + 360
 const VARS = [
   "--primary", "--ring", "--sidebar-primary", "--sidebar-ring",
   "--accent", "--accent-foreground", "--sidebar-accent", "--sidebar-accent-foreground",
-  "--brand-from", "--brand-via", "--brand-to", "--glow",
+  "--brand-from", "--brand-via", "--brand-to", "--brand-pink", "--glow",
   "--chart-1", "--chart-2", "--chart-3", "--chart-4", "--chart-5",
 ] as const;
 
@@ -25,15 +25,16 @@ export function deriveThemeVars({ h, s, l }: ThemeColor): Record<string, string>
     "--accent-foreground": hsl(h, 80, 24),
     "--sidebar-accent": hsl(h, Math.min(S, 70), 94),
     "--sidebar-accent-foreground": hsl(h, 80, 24),
-    "--brand-from": hsl(h + 18, Math.max(S, 80), Math.min(l + 16, 66)),
-    "--brand-via": hsl(h, Math.max(S, 85), l),
-    "--brand-to": hsl(h - 28, Math.max(S, 70), Math.max(l - 5, 38)),
+    "--brand-from": hsl(h, Math.max(S, 82), Math.min(l + 11, 68)),
+    "--brand-via": hsl(198, 74, 52),
+    "--brand-to": hsl(210, 54, 23),
+    "--brand-pink": hsl(326, 75, 50),
     "--glow": hsl(h, Math.max(S, 85), l),
-    "--chart-1": hsl(h + 18, 85, 52),
-    "--chart-2": hsl(h, 85, 47),
-    "--chart-3": hsl(h - 28, 78, 44),
-    "--chart-4": hsl(h - 50, 64, 46),
-    "--chart-5": hsl(h + 30, 85, 60),
+    "--chart-1": hsl(h, 85, 52),
+    "--chart-2": hsl(198, 74, 52),
+    "--chart-3": hsl(210, 54, 32),
+    "--chart-4": hsl(326, 75, 50),
+    "--chart-5": hsl(168, 78, 42),
   };
 }
 

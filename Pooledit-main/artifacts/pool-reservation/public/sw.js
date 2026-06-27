@@ -32,8 +32,12 @@ self.addEventListener("fetch", (event) => {
     (async () => {
       try {
         const fresh = await fetch(req);
-        const cache = await caches.open(CACHE);
-        cache.put(req, fresh.clone()).catch(() => {});
+        // Only cache genuine successful, same-origin (basic) responses — never an
+        // error page or opaque response, so the offline fallback stays trustworthy.
+        if (fresh && fresh.ok && fresh.type === "basic") {
+          const cache = await caches.open(CACHE);
+          cache.put(req, fresh.clone()).catch(() => {});
+        }
         return fresh;
       } catch {
         const cached = await caches.match(req);

@@ -9,14 +9,37 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CheckCircle, XCircle, Clock, Wallet, Download } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Wallet, Download, ScanLine } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { downloadCsv, csvStamp } from "@/lib/export-csv";
+import { cn } from "@/lib/utils";
 
 type TopupRequest = {
   id: number; userId: number; amount: number; method: string; slipImageUrl?: string;
   note?: string; status: string; createdAt: string; reviewedAt?: string; reviewNote?: string;
+  // Automated slip-reading results (QR + OCR)
+  slipRef?: string | null; slipAmount?: number | null; slipBank?: string | null;
+  slipRecipientMatch?: boolean | null; slipVerdict?: string | null; slipWarnings?: string[];
   user: { id: number; firstName: string; lastName: string; username: string };
+};
+
+const VERDICT: Record<string, { label: string; cls: string }> = {
+  match: { label: "✓ สลิปตรง", cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300" },
+  review: { label: "⚠ ควรตรวจสอบ", cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
+  duplicate: { label: "⛔ สลิปซ้ำ", cls: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  unread: { label: "อ่านสลิปไม่ออก", cls: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300" },
+};
+const WARNING_LABEL: Record<string, string> = {
+  amount_not_detected: "อ่านยอดเงินจากสลิปไม่ได้",
+  timestamp_not_detected: "อ่านเวลาจากสลิปไม่ได้",
+  recipient_not_matched: "ชื่อผู้รับไม่ตรงบัญชีร้าน",
+  qr_decode_failed: "อ่าน QR ไม่ได้ (ใช้ OCR แทน)",
+  ocr_unreadable: "อ่านตัวอักษรในสลิปไม่ได้",
+  duplicate_slip: "สลิปนี้ถูกใช้เติมเงินไปแล้ว",
+};
+const VerdictBadge = ({ v }: { v?: string | null }) => {
+  if (!v || !VERDICT[v]) return null;
+  return <Badge className={VERDICT[v].cls}>{VERDICT[v].label}</Badge>;
 };
 
 export const AdminWalletManagement: FC = () => {
@@ -141,6 +164,7 @@ export const AdminWalletManagement: FC = () => {
                         <p className="font-medium">{r.user.firstName} {r.user.lastName}</p>
                         <span className="text-muted-foreground text-sm">@{r.user.username}</span>
                         {statusBadge(r.status)}
+                        <VerdictBadge v={r.slipVerdict} />
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">{methodLabel[r.method] || r.method} · {new Date(r.createdAt).toLocaleDateString("th-TH")}</p>
                       {r.note && <p className="text-xs text-muted-foreground">{r.note}</p>}
@@ -169,6 +193,35 @@ export const AdminWalletManagement: FC = () => {
                 <div><p className="text-muted-foreground">สถานะ</p>{statusBadge(selected.status)}</div>
               </div>
               {selected.note && <div><p className="text-sm text-muted-foreground">หมายเหตุ:</p><p className="text-sm">{selected.note}</p></div>}
+
+              {selected.slipVerdict && (
+                <div className="rounded-xl border p-3 space-y-2 bg-secondary/30">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <ScanLine className="w-4 h-4 text-primary" /> ผลตรวจสลิปอัตโนมัติ <VerdictBadge v={selected.slipVerdict} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <p className="text-muted-foreground text-xs">ยอดในสลิป</p>
+                      <p className={cn("font-medium", selected.slipAmount != null && Math.abs(selected.slipAmount - selected.amount) < 0.01 ? "text-emerald-600" : "text-amber-600")}>
+                        {selected.slipAmount != null ? `฿${selected.slipAmount.toLocaleString()}` : "—"}
+                        {selected.slipAmount != null && Math.abs(selected.slipAmount - selected.amount) >= 0.01 && " · ไม่ตรงยอดที่แจ้ง"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-xs">ผู้รับ</p>
+                      <p>{selected.slipRecipientMatch == null ? "— (ยังไม่ตั้งบัญชีร้าน)" : selected.slipRecipientMatch ? "ตรงบัญชีร้าน ✓" : "ไม่ตรง ✗"}</p>
+                    </div>
+                    <div><p className="text-muted-foreground text-xs">ธนาคาร</p><p>{selected.slipBank || "—"}</p></div>
+                    <div><p className="text-muted-foreground text-xs">เลขอ้างอิง</p><p className="font-mono text-xs truncate" title={selected.slipRef || ""}>{selected.slipRef || "—"}</p></div>
+                  </div>
+                  {selected.slipWarnings && selected.slipWarnings.length > 0 && (
+                    <ul className="text-xs text-amber-700 dark:text-amber-300 list-disc list-inside">
+                      {selected.slipWarnings.map((w) => <li key={w}>{WARNING_LABEL[w] ?? w}</li>)}
+                    </ul>
+                  )}
+                </div>
+              )}
+
               {selected.slipImageUrl && (
                 <div>
                   <p className="text-sm text-muted-foreground mb-2">สลิปการโอน:</p>

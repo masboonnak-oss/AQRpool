@@ -29,6 +29,11 @@ async function buildAll() {
     // - use path traversal to read files (e.g. @google-cloud/secret-manager loads sibling .proto files)
     external: [
       "*.node",
+      // Slip-reader deps load workers/WASM/native-ish assets at runtime — keep external.
+      "tesseract.js",
+      "jimp",
+      "jsqr",
+      "luxon",
       "sharp",
       "better-sqlite3",
       "sqlite3",

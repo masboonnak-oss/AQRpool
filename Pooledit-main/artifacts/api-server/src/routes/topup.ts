@@ -2,15 +2,60 @@ import { Router } from "express";
 import fs from "fs/promises";
 import path from "path";
 import { db, topupRequestsTable, walletsTable, transactionsTable, usersTable } from "@workspace/db";
-import { eq, desc, sql, and } from "drizzle-orm";
+import { eq, desc, sql, and, ne } from "drizzle-orm";
 import { authenticate, requireAdmin } from "../middlewares/auth.js";
 import { attachBranch, branchEq, newRowBranch } from "../middlewares/branch.js";
 import { getOrCreateWallet } from "./wallet.js";
 import { dataDirs } from "../lib/dataPaths.js";
 import { appendMemberLog } from "../lib/memberLog.js";
 import { writeEncryptedFile } from "../lib/cryptoVault.js";
+import { extractSlip } from "../lib/slipVerify.js";
+import { logger } from "../lib/logger.js";
 
 const router = Router();
+
+// Read the slip image, then auto-fill the verification columns so the admin sees a
+// verdict (ตรง / ตรวจสอบ / ซ้ำ / อ่านไม่ออก) without opening the slip. Best-effort and
+// runs in the background — never blocks or fails the member's top-up submission.
+async function verifySlipInBackground(requestId: number, dataUrl: unknown, requestedAmount: number): Promise<void> {
+  try {
+    if (typeof dataUrl !== "string") return;
+    const m = /^data:image\/[a-zA-Z0-9.+-]+;base64,(.+)$/s.exec(dataUrl);
+    if (!m) return;
+    const buffer = Buffer.from(m[1], "base64");
+
+    const ex = await extractSlip(buffer);
+
+    // Duplicate: the same slip reference already used by another non-rejected request.
+    let duplicate = false;
+    if (ex.slipRef) {
+      const [dup] = await db
+        .select({ id: topupRequestsTable.id })
+        .from(topupRequestsTable)
+        .where(and(eq(topupRequestsTable.slipRef, ex.slipRef), ne(topupRequestsTable.id, requestId), ne(topupRequestsTable.status, "rejected")))
+        .limit(1);
+      duplicate = !!dup;
+    }
+
+    const amountMatch = ex.amountThb != null && Math.abs(ex.amountThb - requestedAmount) < 0.01;
+    const recipientOk = ex.recipientMatched !== false; // null (not configured) counts as ok
+    const unreadable = !ex.slipRef && !ex.ocrText;
+
+    const verdict = duplicate ? "duplicate" : unreadable ? "unread" : (amountMatch && recipientOk) ? "match" : "review";
+
+    await db.update(topupRequestsTable).set({
+      slipRef: ex.slipRef,
+      slipAmount: ex.amountThb != null ? String(ex.amountThb) : null,
+      slipBank: ex.bank,
+      slipRecipientMatch: ex.recipientMatched,
+      slipVerdict: verdict,
+      slipWarnings: JSON.stringify(duplicate ? [...ex.warnings, "duplicate_slip"] : ex.warnings),
+      slipCheckedAt: new Date(),
+    }).where(eq(topupRequestsTable.id, requestId));
+  } catch (err) {
+    logger.warn({ err, requestId }, "slip verification failed");
+  }
+}
 
 // Persist a base64 data-URL slip into data/slips/ for record-keeping. Best-effort.
 async function saveSlipFile(dataUrl: unknown, topupId: number, userId: number): Promise<void> {
@@ -50,6 +95,9 @@ router.post("/", authenticate, attachBranch, async (req, res) => {
 
     // Archive the uploaded slip image into the organized data/slips/ folder.
     await saveSlipFile(slipImageUrl, request.id, req.user!.userId);
+
+    // Auto-read the slip in the background (QR + OCR) to assist admin review.
+    void verifySlipInBackground(request.id, slipImageUrl, Number(request.amount));
 
     await appendMemberLog({ userId: req.user!.userId }, "activity", {
       action: "topup_request", amount: Number(request.amount), method,
@@ -97,6 +145,9 @@ router.get("/admin", authenticate, requireAdmin, attachBranch, async (req, res) 
     return res.json(rows.map((r: any) => ({
       ...r.request,
       amount: Number(r.request.amount),
+      slipAmount: r.request.slipAmount != null ? Number(r.request.slipAmount) : null,
+      slipWarnings: r.request.slipWarnings ? JSON.parse(r.request.slipWarnings) : [],
+      slipCheckedAt: r.request.slipCheckedAt?.toISOString() || null,
       createdAt: r.request.createdAt.toISOString(),
       reviewedAt: r.request.reviewedAt?.toISOString() || null,
       user: r.user,

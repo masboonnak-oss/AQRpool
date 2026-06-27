@@ -4,9 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Crown, CheckCircle2, Calendar, Zap, ShoppingBag } from "lucide-react";
+import { Crown, CheckCircle2, Calendar, Zap, ShoppingBag, BadgePercent } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
+import { tierTheme } from "@/lib/membership-tiers";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -14,6 +16,7 @@ import {
 
 type Package = { id: number; name: string; nameEn: string; description?: string; imageUrl?: string | null; price: number; durationDays: number; benefits?: string; bookingDiscount: number; maxBookingsPerMonth?: number; isActive: boolean };
 type MemberPackage = { id: number; packageId: number; pricePaid: number; status: string; startDate: string; endDate: string; isExpired: boolean; package: Package };
+type Tier = { id: string; label: string; discount: number };
 
 export const Packages: FC = () => {
   const { t } = useTranslation();
@@ -24,24 +27,31 @@ export const Packages: FC = () => {
   const [packages, setPackages] = useState<Package[]>([]);
   const [myPackages, setMyPackages] = useState<MemberPackage[]>([]);
   const [wallet, setWallet] = useState<{ balance: number } | null>(null);
+  const [tier, setTier] = useState<Tier | null>(null);
   const [loading, setLoading] = useState(true);
   const [buyPkg, setBuyPkg] = useState<Package | null>(null);
   const [buying, setBuying] = useState(false);
 
   const fetchAll = async () => {
     setLoading(true);
-    const [pkRes, myRes, wRes] = await Promise.all([
+    const [pkRes, myRes, wRes, uRes] = await Promise.all([
       fetch(`${baseUrl}/api/packages`, { headers: { Authorization: `Bearer ${token}` } }),
       fetch(`${baseUrl}/api/packages/my`, { headers: { Authorization: `Bearer ${token}` } }),
       fetch(`${baseUrl}/api/wallet/me`, { headers: { Authorization: `Bearer ${token}` } }),
+      fetch(`${baseUrl}/api/packages/my-usage`, { headers: { Authorization: `Bearer ${token}` } }),
     ]);
     if (pkRes.ok) setPackages(await pkRes.json());
     if (myRes.ok) setMyPackages(await myRes.json());
     if (wRes.ok) setWallet(await wRes.json());
+    if (uRes.ok) { const u = await uRes.json(); setTier(u.tier ?? null); }
     setLoading(false);
   };
 
   useEffect(() => { fetchAll(); }, []);
+
+  // Rank discount applied at purchase (server-enforced; shown here for transparency).
+  const tierDiscount = tier?.discount ?? 0;
+  const priceAfter = (p: number) => Math.round(p * (1 - tierDiscount / 100));
 
   const handleBuy = async () => {
     if (!buyPkg) return;
@@ -65,11 +75,41 @@ export const Packages: FC = () => {
 
   const activePackage = myPackages.find(mp => mp.status === "active" && !mp.isExpired);
 
-  if (loading) return <div className="flex items-center justify-center min-h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
+  if (loading) return (
+    <div className="space-y-6 max-w-3xl mx-auto">
+      <Skeleton className="h-16 w-full rounded-2xl" />
+      <div className="grid sm:grid-cols-2 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="rounded-xl border border-border p-6 space-y-4">
+            <Skeleton className="h-5 w-2/3" />
+            <Skeleton className="h-8 w-1/2" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+            <Skeleton className="h-9 w-full rounded-md" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <PageHeader title={t("pkg.title")} icon={Crown} gradient="from-amber-400 to-orange-600" />
+
+      {/* Rank discount banner */}
+      {tier && tierDiscount > 0 && (() => {
+        const th = tierTheme(tier.id);
+        const Icon = th.Icon;
+        return (
+          <div className="rounded-2xl px-4 py-3 flex items-center gap-3 text-sm font-semibold" style={{ background: th.surface, color: th.ink }}>
+            <Icon className="w-5 h-5 shrink-0" />
+            <span>สิทธิ์แรงค์ {th.label} — รับส่วนลดซื้อคอร์ส/แพ็กเกจทุกชิ้น {tierDiscount}% โดยอัตโนมัติ</span>
+          </div>
+        );
+      })()}
 
       {/* Active package banner */}
       {activePackage && (
@@ -102,8 +142,16 @@ export const Packages: FC = () => {
                   <h3 className="text-lg font-display font-bold">{pkg.name}</h3>
                   {pkg.description && <p className="text-sm text-muted-foreground">{pkg.description}</p>}
                 </div>
-                <div className="flex items-end gap-1">
-                  <span className="text-3xl font-display font-extrabold text-gradient">฿{pkg.price.toLocaleString()}</span>
+                <div className="flex items-end gap-2 flex-wrap">
+                  <span className="text-3xl font-display font-extrabold text-gradient">฿{priceAfter(pkg.price).toLocaleString()}</span>
+                  {tierDiscount > 0 && (
+                    <>
+                      <span className="text-base text-muted-foreground line-through mb-1">฿{pkg.price.toLocaleString()}</span>
+                      <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 px-2 py-0.5 text-xs font-bold">
+                        <BadgePercent className="w-3 h-3" /> ลด {tierDiscount}%
+                      </span>
+                    </>
+                  )}
                 </div>
                 <div className="space-y-1.5 text-sm">
                   <div className="flex items-center gap-2 text-muted-foreground">
@@ -143,16 +191,24 @@ export const Packages: FC = () => {
             <AlertDialogTitle>ยืนยันการซื้อแพ็กเกจ</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <p>{buyPkg?.name}</p>
-              <p className="text-lg font-bold text-primary">฿{buyPkg?.price.toLocaleString()}</p>
+              {buyPkg && tierDiscount > 0 ? (
+                <p className="text-lg font-bold text-primary flex items-center gap-2">
+                  ฿{priceAfter(buyPkg.price).toLocaleString()}
+                  <span className="text-sm text-muted-foreground line-through">฿{buyPkg.price.toLocaleString()}</span>
+                  <span className="text-xs font-bold text-emerald-600">ประหยัด ฿{(buyPkg.price - priceAfter(buyPkg.price)).toLocaleString()}</span>
+                </p>
+              ) : (
+                <p className="text-lg font-bold text-primary">฿{buyPkg?.price.toLocaleString()}</p>
+              )}
               <p className="text-sm">ยอดเงินคงเหลือ: ฿{(wallet?.balance ?? 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })}</p>
-              {wallet && buyPkg && wallet.balance < buyPkg.price && (
+              {wallet && buyPkg && wallet.balance < priceAfter(buyPkg.price) && (
                 <p className="text-red-500 text-sm">ยอดเงินไม่พอ กรุณาเติมเงินก่อน</p>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBuy} disabled={buying || (wallet ? wallet.balance < (buyPkg?.price ?? 0) : false)}>
+            <AlertDialogAction onClick={handleBuy} disabled={buying || (wallet ? wallet.balance < priceAfter(buyPkg?.price ?? 0) : false)}>
               {buying ? "กำลังซื้อ..." : "ยืนยันซื้อ"}
             </AlertDialogAction>
           </AlertDialogFooter>

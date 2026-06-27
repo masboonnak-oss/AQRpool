@@ -530,6 +530,67 @@
   100% { transform: translate3d(var(--rx, 0), var(--ry, 0), 0) scale(12); opacity: 0; border-width: 0; }
 }
 
+/* =====================================================================
+   Membership tier card — premium metallic / holographic flourishes.
+   Surface colours come from JS (membership-tiers.ts); these classes add
+   the moving light, the holo shimmer and the engraved guilloché texture.
+   ===================================================================== */
+.tier-card { position: relative; isolation: isolate; overflow: hidden; }
+
+/* faint engraved concentric pattern, like a real bank/credit card */
+.tier-card::before {
+  content: "";
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  opacity: .16;
+  background-image:
+    repeating-radial-gradient(circle at 88% -10%, hsl(0 0% 100% / .6) 0 1px, transparent 1px 13px),
+    repeating-radial-gradient(circle at 8% 118%, hsl(0 0% 100% / .45) 0 1px, transparent 1px 17px);
+  mix-blend-mode: soft-light;
+}
+
+/* diagonal metallic light that sweeps across the card */
+.tier-sweep::after {
+  content: "";
+  position: absolute; inset: -2px; z-index: 3; pointer-events: none;
+  background: linear-gradient(115deg,
+    transparent 28%, hsl(0 0% 100% / .0) 40%, hsl(0 0% 100% / .55) 50%,
+    hsl(0 0% 100% / .0) 60%, transparent 72%);
+  background-size: 250% 100%;
+  transform: translateX(-60%);
+  animation: tier-sweep 5.5s ease-in-out infinite;
+  mix-blend-mode: soft-light;
+}
+@keyframes tier-sweep {
+  0%   { transform: translateX(-75%); }
+  55%, 100% { transform: translateX(75%); }
+}
+
+/* holographic colour-shift layer (Diamond) */
+.tier-holo > .tier-holo-layer {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  opacity: .55; mix-blend-mode: overlay;
+  background: linear-gradient(125deg,
+    hsl(190 95% 72% / .85), hsl(265 92% 76% / .8), hsl(325 92% 72% / .75),
+    hsl(150 88% 70% / .75), hsl(45 95% 72% / .8), hsl(190 95% 72% / .85));
+  background-size: 320% 320%;
+  animation: tier-holo 9s ease infinite;
+}
+@keyframes tier-holo {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+
+/* twinkle for the floating sparkles */
+.tier-twinkle { animation: tier-twinkle 2.6s ease-in-out infinite; }
+@keyframes tier-twinkle {
+  0%, 100% { opacity: .25; transform: scale(.7); }
+  50%      { opacity: 1;   transform: scale(1.15); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tier-sweep::after, .tier-holo > .tier-holo-layer, .tier-twinkle { animation: none !important; }
+}
+
 /* ---- Global niceties ---- */
 html { scroll-behavior: smooth; }
 ::selection { background: hsl(var(--brand-via) / 0.25); }

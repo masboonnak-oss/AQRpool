@@ -6,7 +6,7 @@ import { useGetMemberStats, useGetUpcomingReservations } from "@workspace/api-cl
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { CalendarDays, CalendarCheck, CalendarX, Activity, Ticket, Wallet, CalendarClock, BadgeCheck, Clock, GraduationCap, Users, FileText, ArrowRight } from "lucide-react";
+import { CalendarDays, CalendarCheck, CalendarX, Activity, Ticket, Wallet, CalendarClock, BadgeCheck, Clock, GraduationCap, Users, FileText, ArrowRight, AlertTriangle, Sparkles } from "lucide-react";
 
 export const Dashboard: FC = () => {
   const { t } = useTranslation();
@@ -38,11 +38,35 @@ export const Dashboard: FC = () => {
   const pkg = usage?.packages?.[0];
   const daysLeft = pkg ? Math.max(0, Math.ceil((new Date(pkg.endDate).getTime() - Date.now()) / 86400000)) : null;
 
+  // Course reminders — built purely from my-usage data (no schema/DB needed).
+  // Warn when a package expires soon (≤7 days) or its remaining uses run low (≤2).
+  const EXPIRY_WARN_DAYS = 7;
+  const LOW_QUOTA_WARN = 2;
+  const reminders: { key: string; tone: "warn" | "danger"; text: string }[] = [];
+  for (const p of (usage?.packages ?? []) as any[]) {
+    const dLeft = Math.ceil((new Date(p.endDate).getTime() - Date.now()) / 86400000);
+    if (dLeft >= 0 && dLeft <= EXPIRY_WARN_DAYS) {
+      reminders.push({
+        key: `exp-${p.memberPackageId}`,
+        tone: dLeft <= 2 ? "danger" : "warn",
+        text: dLeft === 0 ? `คอร์ส "${p.name}" หมดอายุวันนี้` : `คอร์ส "${p.name}" จะหมดอายุในอีก ${dLeft} วัน`,
+      });
+    }
+    if (p.remaining !== null && p.remaining <= LOW_QUOTA_WARN) {
+      reminders.push({
+        key: `quota-${p.memberPackageId}`,
+        tone: p.remaining <= 0 ? "danger" : "warn",
+        text: p.remaining <= 0 ? `คอร์ส "${p.name}" ใช้สิทธิ์ครบแล้ว` : `คอร์ส "${p.name}" เหลือสิทธิ์อีก ${p.remaining} ครั้ง`,
+      });
+    }
+  }
+
   const memberCards = [
     { label: "รหัสสมาชิก", value: memberCode, icon: BadgeCheck, grad: "from-indigo-500 to-violet-600", tint: "text-indigo-500", href: "/membership-card", action: "ดูบัตร" },
     { label: "ครั้งคงเหลือ", value: remaining === null ? "ไม่จำกัด" : `${remaining} ครั้ง`, icon: Ticket, grad: "from-emerald-500 to-teal-600", tint: "text-emerald-500", href: "/packages", action: "ดูแพ็กเกจ" },
     { label: "ยอดเงินในกระเป๋า", value: `฿${balance.toLocaleString("th-TH")}`, icon: Wallet, grad: "from-amber-500 to-orange-600", tint: "text-amber-500", href: "/wallet", action: "ดูกระเป๋า" },
     { label: "ระยะเวลาสมาชิก", value: daysLeft === null ? "ไม่มีแพ็กเกจ" : `เหลือ ${daysLeft} วัน`, icon: CalendarClock, grad: "from-sky-500 to-blue-600", tint: "text-sky-500", href: "/packages", action: "รายละเอียด" },
+    { label: "แต้มสะสม", value: `${Number(usage?.points ?? 0).toLocaleString("th-TH")} แต้ม`, icon: Sparkles, grad: "from-fuchsia-500 to-pink-600", tint: "text-fuchsia-500", href: "/membership-card", action: "ดูบัตร" },
   ];
 
   const statCards = [
@@ -60,6 +84,28 @@ export const Dashboard: FC = () => {
           <Link href="/book">{t("dash.quickBook")}</Link>
         </Button>
       </div>
+
+      {/* Course reminders — expiring soon / low remaining uses */}
+      {reminders.length > 0 && (
+        <div className="space-y-2">
+          {reminders.map((r) => (
+            <Link
+              key={r.key}
+              href="/packages"
+              className={[
+                "flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium transition-colors",
+                r.tone === "danger"
+                  ? "border-red-300/60 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-400/30 dark:bg-red-950/30 dark:text-red-300"
+                  : "border-amber-300/60 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-400/30 dark:bg-amber-950/30 dark:text-amber-300",
+              ].join(" ")}
+            >
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <span className="flex-1">{r.text}</span>
+              <span className="text-xs inline-flex items-center gap-1 opacity-80">ต่ออายุ/ซื้อเพิ่ม <ArrowRight className="h-3.5 w-3.5" /></span>
+            </Link>
+          ))}
+        </div>
+      )}
 
       {/* Membership summary — the key things a member needs to know */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">

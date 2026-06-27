@@ -41,6 +41,7 @@ import { MemberAvatar } from "@/components/member-avatar";
 import { ImageUpload } from "@/components/image-upload";
 import { cn } from "@/lib/utils";
 import { downloadCsv, csvStamp } from "@/lib/export-csv";
+import { tierTheme } from "@/lib/membership-tiers";
 
 type User = {
   id: number;
@@ -56,8 +57,23 @@ type User = {
   packageName?: string | null;
   packageRemaining?: number | null;
   packageDaysLeft?: number | null;
+  tier?: string;
+  tierLabel?: string;
+  totalSpent?: number;
   role: string;
   createdAt: string;
+};
+
+// Compact loyalty-rank badge (Bronze/Silver/Gold/Diamond).
+const TierBadge = ({ tier }: { tier?: string }) => {
+  if (!tier) return null;
+  const t = tierTheme(tier);
+  const Icon = t.Icon;
+  return (
+    <span className={cn("inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold", t.badgeClass)}>
+      <Icon className="w-3 h-3" /> {t.label}
+    </span>
+  );
 };
 
 const roleConfig: Record<string, { label: string; cls: string; dot: string }> = {
@@ -500,9 +516,10 @@ export function AdminMembers() {
                         <UserAvatar firstName={user.firstName} lastName={user.lastName} profileImageUrl={(user as any).profileImageUrl} />
                         <div className="min-w-0">
                           <p className="font-semibold text-foreground truncate">{user.firstName} {user.lastName}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                             <span className="text-xs text-muted-foreground">@{user.username}</span>
                             <span className="font-mono text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">{user.memberCode ?? "-"}</span>
+                            {user.role === "member" && <TierBadge tier={user.tier} />}
                           </div>
                         </div>
                       </div>

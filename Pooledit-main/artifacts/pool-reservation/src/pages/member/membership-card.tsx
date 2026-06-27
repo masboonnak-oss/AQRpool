@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Ticket, QrCode, CalendarClock, Sparkles, ShieldCheck, BadgePercent, Check, Crown, Download, Waves } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { downloadCsv, csvStamp } from "@/lib/export-csv";
+import { tierTheme } from "@/lib/membership-tiers";
+import { TierCard, type TierInfo } from "@/components/membership/tier-card";
 
 type UsagePackage = {
   memberPackageId: number;
@@ -25,6 +27,8 @@ type Usage = {
   hasQuota: boolean;
   totalRemaining: number | null;
   bestDiscount: number;
+  tier?: TierInfo;
+  points?: number;
   benefits: string[];
   packages: UsagePackage[];
 };
@@ -79,6 +83,8 @@ export const MembershipCard: FC = () => {
 
   const remaining = usage?.totalRemaining ?? null;
   const initials = user ? `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() : "U";
+  const tier = usage?.tier;
+  const theme = tierTheme(tier?.id);
   const exportPackages = () => {
     downloadCsv(`my-course-history-${csvStamp()}.csv`, [
       ["คอร์ส", "วันที่เติม", "วันเริ่ม", "วันหมดอายุ", "ใช้ไป", "โควตา", "ยอดชำระ", "สถานะ"],
@@ -122,6 +128,38 @@ export const MembershipCard: FC = () => {
       </div>
 
       <div className="max-w-md mx-auto px-4 -mt-2 space-y-6">
+        {/* Premium loyalty-rank card — the showpiece */}
+        {tier && (
+          <TierCard
+            theme={theme}
+            tier={tier}
+            name={`${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() || "สมาชิก"}
+            memberCode={(user as any)?.memberCode}
+            initials={initials}
+            points={usage?.points}
+          />
+        )}
+
+        {/* Rank perks / สิทธิพิเศษตามแรงค์ */}
+        {tier && (
+          <Card className="rounded-2xl overflow-hidden border-border/60">
+            <div className="px-5 py-3 flex items-center gap-2" style={{ background: theme.surface, color: theme.ink }}>
+              <theme.Icon className="w-4 h-4" />
+              <span className="font-bold text-sm">สิทธิพิเศษแรงค์ {theme.label}</span>
+            </div>
+            <CardContent className="p-5">
+              <ul className="space-y-2">
+                {theme.perks.map((p, i) => (
+                  <li key={i} className="flex items-start gap-2.5 text-sm">
+                    <Check className="w-4 h-4 mt-0.5 shrink-0" style={{ color: `hsl(var(--primary))` }} />
+                    <span>{p}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Member QR card — premium themed header */}
         <Card className="overflow-hidden rounded-3xl border-border/60 shadow-xl">
           <div className="relative overflow-hidden bg-gradient-to-br from-primary via-cyan-500 to-blue-600 p-5 text-white">

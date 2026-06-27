@@ -6,6 +6,7 @@ import { attachBranch, branchEq, newRowBranch } from "../../middlewares/branch.j
 import { getOrCreateWallet } from "../finance/wallet.js";
 import { getActiveUsages } from "../../lib/packageUsage.js";
 import { appendMemberLog } from "../../lib/memberLog.js";
+import { computeTier } from "../../lib/memberTier.js";
 
 const router = Router();
 
@@ -433,6 +434,15 @@ router.get("/my", authenticate, async (req, res) => {
 router.get("/my-usage", authenticate, async (req, res) => {
   try {
     const usages = await getActiveUsages(db, req.user!.userId);
+
+    // Loyalty rank — derived from lifetime spend (all non-cancelled packages this
+    // member ever bought). Drives the premium tier card + rank-based perks.
+    const [spentRow] = await db
+      .select({ spent: sql<string>`coalesce(sum(${memberPackagesTable.pricePaid}), 0)` })
+      .from(memberPackagesTable)
+      .where(and(eq(memberPackagesTable.userId, req.user!.userId), sql`${memberPackagesTable.status} <> 'cancelled'`));
+    const tier = computeTier(Number(spentRow?.spent ?? 0));
+
     const hasUnlimited = usages.some((u) => u.remaining === null);
     const totalRemaining = hasUnlimited ? null : usages.reduce((s, u) => s + (u.remaining ?? 0), 0);
     // Best booking discount across active packages (สิทธิ์ส่วนลดที่ดีที่สุด)
@@ -451,6 +461,10 @@ router.get("/my-usage", authenticate, async (req, res) => {
       hasQuota: usages.some((u) => u.remaining === null || u.remaining > 0),
       totalRemaining,
       bestDiscount,
+      tier,
+      // Loyalty points — earned 1 per ฿100 of lifetime spend. Computed live from
+      // spend (no separate ledger table yet), so it can never drift out of sync.
+      points: Math.floor(tier.totalSpent / 100),
       benefits,
       packages: usages.map((u) => ({
         memberPackageId: u.memberPackage.id,
@@ -476,7 +490,20 @@ router.post("/:id/purchase", authenticate, attachBranch, async (req, res) => {
     const [pkg] = await db.select().from(membershipPackagesTable).where(eq(membershipPackagesTable.id, packageId)).limit(1);
     if (!pkg || !pkg.isActive) return res.status(404).json({ error: "Package not found" });
 
-    const price = Number(pkg.price);
+    const listPrice = Number(pkg.price);
+
+    // Loyalty-rank discount — derived from lifetime spend (before this purchase).
+    // Bookings are quota-based (no per-booking charge), so the member's rank perk is
+    // realised here, at the only point real money is spent: buying a course/package.
+    const [spentRow] = await db
+      .select({ spent: sql<string>`coalesce(sum(${memberPackagesTable.pricePaid}), 0)` })
+      .from(memberPackagesTable)
+      .where(and(eq(memberPackagesTable.userId, req.user!.userId), sql`${memberPackagesTable.status} <> 'cancelled'`));
+    const tier = computeTier(Number(spentRow?.spent ?? 0));
+    const discountPct = tier.discount;
+    const price = Math.round(listPrice * (1 - discountPct / 100));
+    const saved = listPrice - price;
+
     const wallet = await getOrCreateWallet(req.user!.userId);
     if (Number(wallet.balance) < price) {
       return res.status(400).json({ error: "ยอดเงินในกระเป๋าไม่เพียงพอ", required: price, balance: Number(wallet.balance) });
@@ -489,7 +516,9 @@ router.post("/:id/purchase", authenticate, attachBranch, async (req, res) => {
       userId: req.user!.userId,
       amount: String(price),
       type: "package_purchase",
-      description: `ซื้อแพ็กเกจ: ${pkg.name}`,
+      description: discountPct > 0
+        ? `ซื้อแพ็กเกจ: ${pkg.name} (ส่วนลดแรงค์ ${tier.label} ${discountPct}% -฿${saved.toLocaleString("th-TH")})`
+        : `ซื้อแพ็กเกจ: ${pkg.name}`,
       status: "completed",
       referenceId: packageId,
       branchId: newRowBranch(req),
@@ -507,10 +536,21 @@ router.post("/:id/purchase", authenticate, attachBranch, async (req, res) => {
     }).returning();
 
     await appendMemberLog({ userId: req.user!.userId }, "activity", {
-      action: "package_purchase", packageName: pkg.name, price,
+      action: "package_purchase", packageName: pkg.name, price, listPrice, tier: tier.id, discountPct,
     });
 
-    return res.status(201).json({ ...mp, pricePaid: Number(mp.pricePaid), startDate: mp.startDate.toISOString(), endDate: mp.endDate.toISOString(), createdAt: mp.createdAt.toISOString(), package: { ...pkg, price: Number(pkg.price) } });
+    return res.status(201).json({
+      ...mp,
+      pricePaid: Number(mp.pricePaid),
+      startDate: mp.startDate.toISOString(),
+      endDate: mp.endDate.toISOString(),
+      createdAt: mp.createdAt.toISOString(),
+      listPrice,
+      discountPct,
+      saved,
+      tier: tier.id,
+      package: { ...pkg, price: Number(pkg.price) },
+    });
   } catch {
     return res.status(500).json({ error: "Failed to purchase package" });
   }

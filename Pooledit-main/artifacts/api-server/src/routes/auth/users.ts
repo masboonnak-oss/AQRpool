@@ -7,6 +7,7 @@ import { attachBranch, branchEq, newRowBranch } from "../../middlewares/branch.j
 import { backupUsers, formatBackupUser } from "../../lib/backup.js";
 import { memberCode } from "../../lib/memberCode.js";
 import { initMemberFolder } from "../../lib/memberLog.js";
+import { computeTier } from "../../lib/memberTier.js";
 
 const router = Router();
 
@@ -98,6 +99,19 @@ router.get("/", authenticate, requireAdmin, attachBranch, async (req, res) => {
           .where(and(inArray(memberPackagesTable.userId, ids), eq(memberPackagesTable.status, "active")))
       : [];
 
+    // Lifetime spend per member (all non-cancelled packages ever) → loyalty rank.
+    const spendRows = ids.length
+      ? await db
+          .select({
+            userId: memberPackagesTable.userId,
+            spent: sql<string>`coalesce(sum(${memberPackagesTable.pricePaid}), 0)`,
+          })
+          .from(memberPackagesTable)
+          .where(and(inArray(memberPackagesTable.userId, ids), sql`${memberPackagesTable.status} <> 'cancelled'`))
+          .groupBy(memberPackagesTable.userId)
+      : [];
+    const spentByUser = new Map(spendRows.map((r) => [r.userId, Number(r.spent) || 0]));
+
     const now = Date.now();
     const byUser = new Map<number, { remaining: number | null; endDate: Date; name: string }>();
     for (const { mp, pkg } of pkgRows) {
@@ -115,12 +129,17 @@ router.get("/", authenticate, requireAdmin, attachBranch, async (req, res) => {
     return res.json({
       users: users.map((u) => {
         const p = byUser.get(u.id);
+        const tier = computeTier(spentByUser.get(u.id) ?? 0);
         return {
           ...formatUser(u),
           hasActivePackage: !!p,
           packageName: p ? p.name : null,
           packageRemaining: p ? p.remaining : null,
           packageDaysLeft: p ? Math.max(0, Math.ceil((p.endDate.getTime() - now) / 86400000)) : null,
+          tier: tier.id,
+          tierLabel: tier.label,
+          totalSpent: tier.totalSpent,
+          points: Math.floor(tier.totalSpent / 100),
         };
       }),
       total: count,

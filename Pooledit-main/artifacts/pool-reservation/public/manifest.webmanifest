@@ -1,0 +1,15 @@
+{
+  "name": "Aquarich",
+  "short_name": "Aquarich",
+  "description": "Aquarich — ระบบจองสระว่ายน้ำและสิ่งอำนวยความสะดวก",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1220",
+  "theme_color": "#F2C200",
+  "icons": [
+    { "src": "/aquarich-logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/aquarich-logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

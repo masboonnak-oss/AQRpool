@@ -34,3 +34,11 @@ createRoot(document.getElementById("root")!).render(
     <App />
   </StrictMode>
 );
+
+// PWA: register the (network-first) service worker in production only, so dev HMR
+// is never intercepted. Failures are non-fatal — the app works fine without it.
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {});
+  });
+}

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, membershipPackagesTable, memberPackagesTable, walletsTable, transactionsTable, usersTable, packageUsagesTable, reservationsTable, memberPackageEventsTable } from "@workspace/db";
-import { eq, desc, and, gte, sql, inArray } from "drizzle-orm";
+import { eq, desc, and, gte, lte, sql, inArray } from "drizzle-orm";
 import { authenticate, requireAdmin } from "../middlewares/auth.js";
 import { attachBranch, branchEq, newRowBranch } from "../middlewares/branch.js";
 import { getOrCreateWallet } from "./wallet.js";
@@ -108,6 +108,48 @@ router.delete("/:id", authenticate, requireAdmin, async (req, res) => {
 });
 
 // GET /packages/admin/member/:userId — admin: view a member's full course/package history.
+// GET /packages/admin/purchase-report - admin: package purchase report for CSV/XLSX export.
+router.get("/admin/purchase-report", authenticate, requireAdmin, attachBranch, async (req, res) => {
+  try {
+    const from = typeof req.query.from === "string" && req.query.from ? new Date(`${req.query.from}T00:00:00.000+07:00`) : null;
+    const to = typeof req.query.to === "string" && req.query.to ? new Date(`${req.query.to}T23:59:59.999+07:00`) : null;
+    const rows = await db
+      .select({ tx: transactionsTable, user: usersTable, pkg: membershipPackagesTable })
+      .from(transactionsTable)
+      .innerJoin(usersTable, eq(transactionsTable.userId, usersTable.id))
+      .leftJoin(membershipPackagesTable, eq(transactionsTable.referenceId, membershipPackagesTable.id))
+      .where(and(
+        eq(transactionsTable.type, "package_purchase"),
+        branchEq(req, transactionsTable.branchId),
+        from ? gte(transactionsTable.createdAt, from) : undefined,
+        to ? lte(transactionsTable.createdAt, to) : undefined,
+      ))
+      .orderBy(desc(transactionsTable.createdAt))
+      .limit(2000);
+
+    return res.json(rows.map(({ tx, user, pkg }) => {
+      const packageName = pkg?.name
+        ?? tx.description.replace(/^Admin package:\s*/i, "").replace(/^ซื้อแพ็กเกจ:\s*/i, "").trim()
+        ?? "";
+      return {
+        orderNo: `PKG-${tx.id}`,
+        transactionId: tx.id,
+        buyerName: `${user.firstName} ${user.lastName}`.trim(),
+        phone: user.phone,
+        username: user.username,
+        packageId: tx.referenceId,
+        packageName,
+        amountPaid: Number(tx.amount),
+        orderedAt: tx.createdAt.toISOString(),
+        paymentStatus: tx.status,
+        paymentMethod: tx.description.startsWith("Admin package:") ? "admin" : "wallet",
+      };
+    }));
+  } catch {
+    return res.status(500).json({ error: "Failed to build package purchase report" });
+  }
+});
+
 router.get("/admin/member/:userId", authenticate, requireAdmin, attachBranch, async (req, res) => {
   try {
     const userId = parseInt(req.params.userId);
@@ -428,7 +470,7 @@ router.get("/my-usage", authenticate, async (req, res) => {
 });
 
 // POST /packages/:id/purchase — member: buy package
-router.post("/:id/purchase", authenticate, async (req, res) => {
+router.post("/:id/purchase", authenticate, attachBranch, async (req, res) => {
   try {
     const packageId = parseInt(req.params.id);
     const [pkg] = await db.select().from(membershipPackagesTable).where(eq(membershipPackagesTable.id, packageId)).limit(1);
@@ -450,6 +492,7 @@ router.post("/:id/purchase", authenticate, async (req, res) => {
       description: `ซื้อแพ็กเกจ: ${pkg.name}`,
       status: "completed",
       referenceId: packageId,
+      branchId: newRowBranch(req),
     });
 
     const endDate = new Date();
@@ -460,6 +503,7 @@ router.post("/:id/purchase", authenticate, async (req, res) => {
       packageId,
       pricePaid: String(price),
       endDate,
+      branchId: newRowBranch(req),
     }).returning();
 
     await appendMemberLog({ userId: req.user!.userId }, "activity", {

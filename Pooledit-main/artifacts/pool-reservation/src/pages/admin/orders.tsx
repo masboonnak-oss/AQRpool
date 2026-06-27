@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/page-header";
 import { Package, Truck, CheckCircle, XCircle, MapPin, Phone, User, Receipt, TrendingUp, Wallet, CalendarDays, Clock, Search, Download, Ticket } from "lucide-react";
-import { downloadCsv, csvStamp } from "@/lib/export-csv";
+import { downloadCsv, downloadXlsx, csvStamp, type CsvValue } from "@/lib/export-csv";
 
 type Item = { productId: number; name: string; price: number; qty: number };
 type Order = {
@@ -18,6 +18,19 @@ type Order = {
   slipImageUrl?: string | null; trackingNo?: string | null; note?: string | null;
   paidAt?: string | null; shippedAt?: string | null;
   user?: { firstName: string; lastName: string; username: string };
+};
+type PackagePurchaseReportRow = {
+  orderNo: string;
+  transactionId: number;
+  buyerName: string;
+  phone: string;
+  username: string;
+  packageId: number | null;
+  packageName: string;
+  amountPaid: number;
+  orderedAt: string;
+  paymentStatus: string;
+  paymentMethod: string;
 };
 
 const statusMap: Record<string, { label: string; cls: string }> = {
@@ -122,6 +135,46 @@ export function AdminOrders() {
       ]),
     ]);
   };
+  const packageReportRows = (rows: PackagePurchaseReportRow[]): CsvValue[][] => [
+    ["เลขที่คำสั่งซื้อ", "วันที่และเวลาที่สั่งซื้อ", "ชื่อผู้ซื้อ", "เบอร์โทรศัพท์", "รายการแพ็กเกจที่ซื้อ", "ยอดเงินที่ชำระ", "สถานะการชำระเงิน", "ช่องทางชำระเงิน", "รหัสธุรกรรม", "Username"],
+    ...rows.map((r) => [
+      r.orderNo,
+      new Date(r.orderedAt).toLocaleString("th-TH"),
+      r.buyerName,
+      r.phone,
+      r.packageName,
+      r.amountPaid,
+      r.paymentStatus,
+      r.paymentMethod,
+      r.transactionId,
+      r.username,
+    ]),
+  ];
+  const fetchPackageReport = async () => {
+    const params = new URLSearchParams();
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    const r = await fetch(`${baseUrl}/api/packages/admin/purchase-report${params.toString() ? `?${params}` : ""}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!r.ok) throw new Error("Failed");
+    return r.json() as Promise<PackagePurchaseReportRow[]>;
+  };
+  const exportPackageReport = async (format: "csv" | "xlsx") => {
+    try {
+      const rows = await fetchPackageReport();
+      if (!rows.length) {
+        toast({ title: "ไม่มีข้อมูลรายงานแพ็กเกจในช่วงวันที่นี้" });
+        return;
+      }
+      const data = packageReportRows(rows);
+      const suffix = `${from || "all"}-to-${to || "all"}-${csvStamp()}`;
+      if (format === "xlsx") downloadXlsx(`package-orders-${suffix}.xlsx`, data, "Package Orders");
+      else downloadCsv(`package-orders-${suffix}.csv`, data);
+    } catch {
+      toast({ title: "ดาวน์โหลดรายงานแพ็กเกจไม่สำเร็จ", variant: "destructive" });
+    }
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -199,6 +252,12 @@ export function AdminOrders() {
             <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 w-auto" />
             <Button variant="outline" className="gap-1.5" onClick={exportSales} disabled={!filteredOrders.length}>
               <Download className="h-4 w-4" /> ดาวน์โหลดรายงานยอดขาย
+            </Button>
+            <Button variant="outline" className="gap-1.5" onClick={() => exportPackageReport("xlsx")}>
+              <Download className="h-4 w-4" /> รายงานแพ็กเกจ Excel
+            </Button>
+            <Button variant="ghost" className="gap-1.5" onClick={() => exportPackageReport("csv")}>
+              <Download className="h-4 w-4" /> CSV แพ็กเกจ
             </Button>
           </CardContent>
         </Card>

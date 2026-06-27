@@ -28,7 +28,6 @@ import {
 
 const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
 const asset = (name: string) => `${baseUrl}/landing-assets/${name}`;
-const poolAsset = (name: string) => `${baseUrl}/pool-assets/${name}`;
 
 type PublicPackage = {
   id: number;
@@ -120,15 +119,9 @@ export const Landing: FC = () => {
   });
 
   const ageCards = [
-    { title: copy.kids, desc: copy.kidsDesc, icon: Baby, image: poolAsset("kids-lessons.jpg"), tone: "bg-sky-50 text-sky-700 border-sky-100" },
-    { title: copy.adults, desc: copy.adultsDesc, icon: Dumbbell, image: poolAsset("aqua-fitness.jpg"), tone: "bg-amber-50 text-amber-700 border-amber-100" },
-    { title: copy.seniors, desc: copy.seniorsDesc, icon: Accessibility, image: poolAsset("water-texture.jpg"), tone: "bg-rose-50 text-rose-700 border-rose-100" },
-  ];
-
-  const packageImages = [
-    poolAsset("kids-lessons.jpg"),
-    poolAsset("aqua-fitness.jpg"),
-    poolAsset("pool-hero.jpg"),
+    { title: copy.kids, desc: copy.kidsDesc, icon: Baby, image: asset("kid_ztP_hq.jpg"), tone: "bg-sky-50 text-sky-700 border-sky-100" },
+    { title: copy.adults, desc: copy.adultsDesc, icon: Dumbbell, image: asset("fearwater_maxres.jpg"), tone: "bg-amber-50 text-amber-700 border-amber-100" },
+    { title: copy.seniors, desc: copy.seniorsDesc, icon: Accessibility, image: asset("eed_mD4_hq.jpg"), tone: "bg-rose-50 text-rose-700 border-rose-100" },
   ];
 
   const facilities = [
@@ -173,8 +166,8 @@ export const Landing: FC = () => {
       </header>
 
       <section className="relative min-h-[calc(100svh-4.25rem)] overflow-hidden">
-        <img src={poolAsset("pool-hero.jpg")} alt="Aqua Rich swimming pool" loading="eager" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#10283f]/82 via-[#10283f]/58 to-[#10283f]/20" />
+        <img src={asset("activity_hero.jpg")} alt="Aqua Rich activity" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-[#10283f]/65" />
         <div className="relative mx-auto flex min-h-[calc(100svh-4.25rem)] max-w-6xl items-center px-4 py-16">
           <div className="max-w-3xl text-white">
             <div className="inline-flex items-center gap-2 rounded-lg bg-[#F2C200] px-3 py-1.5 text-sm font-bold text-[#1B3A5B]">
@@ -213,7 +206,7 @@ export const Landing: FC = () => {
         <div className="mt-9 grid gap-4 md:grid-cols-3">
           {ageCards.map((item) => (
             <article key={item.title} className="overflow-hidden rounded-lg border border-white bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
-              <img src={item.image} alt={item.title} loading="lazy" className="h-44 w-full object-cover" />
+              <img src={item.image} alt={item.title} className="h-44 w-full object-cover" />
               <div className="p-5">
                 <div className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border ${item.tone}`}>
                   <item.icon className="h-5 w-5" />
@@ -243,7 +236,7 @@ export const Landing: FC = () => {
       </section>
 
       <section className="mx-auto grid max-w-6xl gap-8 px-4 py-14 sm:py-16 lg:grid-cols-[1fr_1.05fr] lg:items-center">
-        <img src={poolAsset("aqua-fitness.jpg")} alt="Aqua fitness class" loading="lazy" className="h-72 w-full rounded-lg object-cover shadow-lg sm:h-96" />
+        <img src={asset("tripcom_1.webp")} alt="Aqua Rich building" className="h-72 w-full rounded-lg object-cover shadow-lg sm:h-96" />
         <div>
           <SectionTitle title={copy.why} icon={ShieldCheck} align="left" />
           <div className="mt-7 space-y-4">
@@ -274,7 +267,7 @@ export const Landing: FC = () => {
                     {isEn ? "Popular" : "ยอดนิยม"}
                   </div>
                 )}
-                <img src={pkg.imageUrl || packageImages[index % packageImages.length]} alt={pkg.name} loading="lazy" className="-mx-5 -mt-5 mb-5 h-36 w-[calc(100%+2.5rem)] object-cover" />
+                {pkg.imageUrl && <img src={pkg.imageUrl} alt={pkg.name} className="-mx-5 -mt-5 mb-5 h-36 w-[calc(100%+2.5rem)] object-cover" />}
                 <h3 className="text-xl font-bold">{isEn && pkg.nameEn ? pkg.nameEn : pkg.name}</h3>
                 <p className="mt-2 text-3xl font-extrabold text-[#F2C200]">{baht(pkg.price)}</p>
                 <p className="mt-2 text-sm text-white/75">{isEn && pkg.descriptionEn ? pkg.descriptionEn : pkg.description}</p>

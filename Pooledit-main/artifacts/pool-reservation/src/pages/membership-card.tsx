@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Ticket, QrCode, CalendarClock, Sparkles, ShieldCheck, BadgePercent, Check, Crown, Download } from "lucide-react";
+import { Ticket, QrCode, CalendarClock, Sparkles, ShieldCheck, BadgePercent, Check, Crown, Download, Waves } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { downloadCsv, csvStamp } from "@/lib/export-csv";
 
@@ -108,6 +108,9 @@ export const MembershipCard: FC = () => {
         </DialogHeader>
     <div className="bg-background pb-6">
       <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-cyan-50/50 to-background dark:from-primary/20 dark:via-cyan-900/20 dark:to-background py-10 px-4">
+        <div className="absolute -top-10 -left-10 w-40 h-40 rounded-full bg-cyan-300/20 blur-3xl" />
+        <div className="absolute -top-6 -right-12 w-44 h-44 rounded-full bg-primary/15 blur-3xl" />
+        <Waves className="absolute bottom-1 right-4 w-20 h-20 text-primary/10" strokeWidth={1.2} />
         <div className="max-w-md mx-auto text-center space-y-1 relative z-10">
           <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-cyan-600">
             บัตรสมาชิก
@@ -119,17 +122,30 @@ export const MembershipCard: FC = () => {
       </div>
 
       <div className="max-w-md mx-auto px-4 -mt-2 space-y-6">
-        {/* Member QR card */}
+        {/* Member QR card — premium themed header */}
         <Card className="overflow-hidden rounded-3xl border-border/60 shadow-xl">
-          <div className="bg-gradient-to-br from-primary to-cyan-500 p-5 text-white flex items-center gap-3">
-            <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-xl font-bold border-2 border-white/40">
-              {initials}
+          <div className="relative overflow-hidden bg-gradient-to-br from-primary via-cyan-500 to-blue-600 p-5 text-white">
+            {/* decorative water + glow */}
+            <div className="absolute -top-8 -right-6 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
+            <Waves className="absolute -bottom-3 right-2 w-28 h-28 text-white/10" strokeWidth={1.2} />
+            <div className="relative">
+              <div className="flex items-center justify-between text-[11px] font-semibold tracking-widest uppercase text-white/85">
+                <span className="flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> Aquarich Member</span>
+                <span className="flex items-center gap-1"><Crown className="w-3.5 h-3.5 text-amber-300" /> {usage?.hasActivePackage ? "Active" : "Member"}</span>
+              </div>
+              <div className="mt-3 flex items-center gap-3">
+                {/* chip */}
+                <div className="w-10 h-7 rounded-md bg-gradient-to-br from-amber-200 to-amber-400 ring-1 ring-white/40 shrink-0" />
+                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold border-2 border-white/40">
+                  {initials}
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-lg truncate">{user?.firstName} {user?.lastName}</div>
+                  <div className="text-white/85 text-xs font-mono tracking-wider">{(user as any)?.memberCode ?? ""}</div>
+                </div>
+                <Ticket className="w-7 h-7 ml-auto opacity-80" />
+              </div>
             </div>
-            <div className="min-w-0">
-              <div className="font-bold text-lg truncate">{user?.firstName} {user?.lastName}</div>
-              <div className="text-white/80 text-xs font-mono">{(user as any)?.memberCode ?? ""}</div>
-            </div>
-            <Ticket className="w-7 h-7 ml-auto opacity-80" />
           </div>
 
           <CardContent className="p-6 flex flex-col items-center text-center">

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Building2, QrCode, CheckCircle2, ChevronLeft, Copy, Check } from "lucide-react";
+import { Upload, Building2, QrCode, CheckCircle2, ChevronLeft, Copy, Check, Wallet, Waves, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Method = "bank_transfer" | "qr_payment";
@@ -89,9 +89,27 @@ export const Topup: FC = () => {
 
   return (
     <div className="space-y-6 max-w-lg mx-auto">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => setLocation("/wallet")}><ChevronLeft className="w-5 h-5" /></Button>
-        <h1 className="text-2xl font-display font-extrabold text-gradient">{t("topup.title")}</h1>
+      {/* Themed hero — wallet + water */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-cyan-500 to-blue-600 text-white shadow-xl shadow-primary/25">
+        <div className="absolute -top-10 -right-8 w-44 h-44 rounded-full bg-white/10 blur-2xl" />
+        <div className="absolute -bottom-12 -left-8 w-48 h-48 rounded-full bg-cyan-200/20 blur-2xl" />
+        <Waves className="absolute right-4 bottom-3 w-24 h-24 text-white/10" strokeWidth={1.2} />
+        <div className="relative p-5 sm:p-6">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={() => setLocation("/wallet")} className="text-white hover:bg-white/20 -ml-2"><ChevronLeft className="w-5 h-5" /></Button>
+            <div className="w-11 h-11 rounded-2xl bg-white/20 flex items-center justify-center ring-1 ring-white/30">
+              <Wallet className="w-6 h-6" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-display font-extrabold leading-tight">{t("topup.title")}</h1>
+              <p className="text-white/85 text-sm flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> โอนแล้วอัปสลิป — ระบบตรวจให้อัตโนมัติ</p>
+            </div>
+          </div>
+        </div>
+        {/* bottom wave */}
+        <svg className="block w-full text-background" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden>
+          <path fill="currentColor" d="M0,32 C240,64 480,0 720,24 C960,48 1200,8 1440,28 L1440,60 L0,60 Z" />
+        </svg>
       </div>
 
       {/* Bank / payment account — full details for the member to transfer to */}

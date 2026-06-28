@@ -1,15 +1,18 @@
 // Create (or upgrade) a super_admin account.
 //
 // Usage:
-//   DATABASE_URL="postgres://..." node create-super-admin.mjs [username] [password]
+//   DATABASE_URL="postgres://..." SUPER_ADMIN_PASSWORD="..." node create-super-admin.mjs [username] [role]
 //
-// Defaults: username=admin  password=admin123
+// Defaults: username=admin, role=super_admin. Password must come from
+// SUPER_ADMIN_PASSWORD or an interactive secret prompt.
 // Idempotent: if the username already exists it is upgraded to super_admin and
 // its password is reset to the one given here.
 //
 // Run from this folder (artifacts/api-server) so `pg` and `bcryptjs` resolve.
 
 import { createRequire } from "node:module";
+import { createInterface } from "node:readline/promises";
+import { stdin as input, stdout as output } from "node:process";
 import { fileURLToPath } from "node:url";
 
 // `bcryptjs` is a direct dep of api-server (resolves next to this file); `pg` is a
@@ -22,9 +25,8 @@ const pg = reqDb("pg");
 const { Pool } = pg;
 
 const username = process.argv[2] || "admin";
-const password = process.argv[3] || "admin123";
-// 4th arg = role (super_admin | dev | admin | ...). Defaults to super_admin.
-const role = process.argv[4] || "super_admin";
+// 3rd arg = role (super_admin | dev | admin | ...). Defaults to super_admin.
+const role = process.argv[3] || "super_admin";
 
 if (!process.env.DATABASE_URL) {
   console.error("ERROR: DATABASE_URL is not set. Provide the Postgres connection string, e.g.:");
@@ -34,7 +36,26 @@ if (!process.env.DATABASE_URL) {
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
+async function readPassword() {
+  if (process.env.SUPER_ADMIN_PASSWORD) return process.env.SUPER_ADMIN_PASSWORD;
+  if (!process.stdin.isTTY) {
+    throw new Error("SUPER_ADMIN_PASSWORD is required when stdin is not interactive.");
+  }
+
+  const rl = createInterface({ input, output });
+  try {
+    return await rl.question("New super-admin password: ");
+  } finally {
+    rl.close();
+  }
+}
+
 async function main() {
+  const password = await readPassword();
+  if (password.length < 12) {
+    throw new Error("Super-admin password must be at least 12 characters.");
+  }
+
   const passwordHash = await bcrypt.hash(password, 12);
 
   // Insert a fresh account, or if the username already exists, upgrade its role
@@ -53,7 +74,7 @@ async function main() {
   const u = rows[0];
   console.log(`OK — ${u.role} ready:`);
   console.log(`  id=${u.id}  username=${u.username}  role=${u.role}  created_at=${u.created_at.toISOString?.() ?? u.created_at}`);
-  console.log(`  login password: ${password}`);
+  console.log("  password: set from secret input (not printed)");
 }
 
 main()

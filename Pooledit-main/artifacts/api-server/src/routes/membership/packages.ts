@@ -7,6 +7,7 @@ import { getOrCreateWallet } from "../finance/wallet.js";
 import { getActiveUsages } from "../../lib/packageUsage.js";
 import { appendMemberLog } from "../../lib/memberLog.js";
 import { computeTier } from "../../lib/memberTier.js";
+import { displayMemberCode } from "../../lib/memberCode.js";
 
 const router = Router();
 
@@ -252,7 +253,7 @@ router.get("/admin/member/:userId/history", authenticate, requireAdmin, attachBr
       admin: admin ? { id: admin.id, firstName: admin.firstName, lastName: admin.lastName, username: admin.username } : null,
     }));
 
-    return res.json({ member: { id: member.id, firstName: member.firstName, lastName: member.lastName, memberCode: `ART${String(member.id).padStart(5, "0")}` }, packages, usages, events });
+    return res.json({ member: { id: member.id, firstName: member.firstName, lastName: member.lastName, memberCode: displayMemberCode(member) }, packages, usages, events });
   } catch {
     return res.status(500).json({ error: "Failed to get member course history" });
   }

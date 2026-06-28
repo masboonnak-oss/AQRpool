@@ -11,6 +11,10 @@
 *.log
 *.zip
 **/data/
+**/.env
+**/.env.*
+!**/.env.example
+**/.tsbuildinfo
 
 # scratch / pasted notes folder (vite @assets alias points here but nothing imports it)
 attached_assets/

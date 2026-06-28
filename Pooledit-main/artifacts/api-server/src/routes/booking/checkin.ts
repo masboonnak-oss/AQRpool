@@ -6,7 +6,7 @@ import { authenticate, requireAdmin } from "../../middlewares/auth.js";
 import { attachBranch, branchEq } from "../../middlewares/branch.js";
 import { getActiveUsages, pickUsable, consumeUse, NoQuotaError } from "../../lib/packageUsage.js";
 import { logUsage } from "../../lib/usageLog.js";
-import { memberCode } from "../../lib/memberCode.js";
+import { displayMemberCode } from "../../lib/memberCode.js";
 import { appendMemberLog } from "../../lib/memberLog.js";
 import { normalizePhone } from "../../lib/phone.js";
 
@@ -126,7 +126,7 @@ router.post("/", authenticate, requireAdmin, attachBranch, async (req, res) => {
 
     await logUsage({
       userId: u.id,
-      memberCode: memberCode(u.id),
+      memberCode: displayMemberCode(u),
       name: `${u.firstName} ${u.lastName}`,
       source: "checkin",
       packageName: consumed.package.name,

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { and, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import { auditLogsTable, db, usersTable } from "@workspace/db";
 import { authenticate, requireSuperAdmin } from "../../middlewares/auth.js";
-import { memberCode } from "../../lib/memberCode.js";
+import { displayMemberCode } from "../../lib/memberCode.js";
 
 const router = Router();
 
@@ -85,7 +85,7 @@ router.get("/", async (req, res) => {
         ...log,
         createdAt: log.createdAt.toISOString(),
         actorName: firstName || lastName ? `${firstName ?? ""} ${lastName ?? ""}`.trim() : log.actorUsername,
-        memberCode: log.actorUserId ? memberCode(log.actorUserId) : null,
+        memberCode: log.actorUserId ? displayMemberCode({ id: log.actorUserId, phone }) : null,
         phone,
         email,
         profileImageUrl,

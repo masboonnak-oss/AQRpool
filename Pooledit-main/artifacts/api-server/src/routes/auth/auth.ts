@@ -5,7 +5,7 @@ import { eq, or } from "drizzle-orm";
 import { signToken } from "../../lib/jwt.js";
 import { authenticate } from "../../middlewares/auth.js";
 import { backupUsers } from "../../lib/backup.js";
-import { memberCode } from "../../lib/memberCode.js";
+import { displayMemberCode } from "../../lib/memberCode.js";
 import { writeMemberProfile, initMemberFolder } from "../../lib/memberLog.js";
 import { clientIp, logClientSession } from "../../lib/clientInfo.js";
 import { generateCaptcha, verifyCaptcha } from "../../lib/captcha.js";
@@ -28,7 +28,7 @@ function loginLimitKey(req: Request): string {
 
 function formatUser(user: typeof usersTable.$inferSelect) {
   const { passwordHash: _, ...rest } = user;
-  return { ...rest, memberCode: memberCode(user.id), createdAt: rest.createdAt.toISOString() };
+  return { ...rest, memberCode: displayMemberCode(user), createdAt: rest.createdAt.toISOString() };
 }
 
 function otpEmailHtml(code: string): string {

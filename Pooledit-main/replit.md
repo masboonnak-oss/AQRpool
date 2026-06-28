@@ -71,6 +71,8 @@ Optional env includes `CORS_ORIGINS`, `FRONTEND_ORIGINS`, `DATA_DIR`, SMTP setti
 - `post-merge.sh` installs with the frozen lockfile and pushes the Drizzle schema for `@workspace/db`.
 - `node`, `pnpm`, and `corepack` must be on PATH before any workspace commands can run locally.
 - The workspace has pnpm `minimumReleaseAge` enabled for supply-chain protection; do not disable it for convenience.
+- Run secret scanning (`pnpm run secret:scan` with `gitleaks` installed) before pushing changes.
+- Decrypted backup download is disabled unless `ALLOW_DECRYPTED_BACKUP_DOWNLOAD=true` is set for a short recovery window.
 
 ## Upgrade Backlog
 

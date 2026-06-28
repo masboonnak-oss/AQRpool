@@ -104,6 +104,13 @@ router.get("/users/latest", async (_req, res) => {
 });
 
 router.get("/users/decrypted/:filename", async (req, res) => {
+  if (process.env.ALLOW_DECRYPTED_BACKUP_DOWNLOAD !== "true") {
+    return res.status(403).json({
+      error: "decrypted_backup_disabled",
+      message: "Decrypted backup download is disabled. Set ALLOW_DECRYPTED_BACKUP_DOWNLOAD=true only for a controlled break-glass recovery window.",
+    });
+  }
+
   try {
     const backup = await readBackupFile(req.params.filename);
     return res.json(backup);

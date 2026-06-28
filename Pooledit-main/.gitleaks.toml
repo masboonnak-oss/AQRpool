@@ -1,0 +1,21 @@
+title = "Aquarich secret scanning"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Repository examples and generated contract fields"
+paths = [
+  '''artifacts/api-server/\.env\.example$''',
+  '''artifacts/pool-reservation/\.env\.example$''',
+  '''lib/api-spec/openapi\.yaml$''',
+  '''lib/api-client-react/src/generated/.*''',
+  '''lib/api-zod/src/generated/.*''',
+]
+
+regexes = [
+  '''pool_token''',
+  '''replace-with-a-long-random-secret''',
+  '''replace-with-32-byte-base64-or-64-char-hex-key''',
+  '''pooledit-local-development-data-vault-key-change-before-production''',
+]

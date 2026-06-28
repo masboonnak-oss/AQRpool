@@ -5,7 +5,7 @@ import { authenticate, requireAdmin, isAdminRole } from "../../middlewares/auth.
 import { attachBranch, branchEq, newRowBranch } from "../../middlewares/branch.js";
 import { consumeUse, refundUseForReservation, getActiveUsages, NoQuotaError } from "../../lib/packageUsage.js";
 import { logUsage } from "../../lib/usageLog.js";
-import { memberCode } from "../../lib/memberCode.js";
+import { displayMemberCode } from "../../lib/memberCode.js";
 import { appendMemberLog } from "../../lib/memberLog.js";
 import { bangkokDate, bangkokDateAfter, isIsoDate } from "../../lib/date.js";
 import { sendMail } from "../../lib/mailer.js";
@@ -527,7 +527,7 @@ router.post("/", authenticate, attachBranch, async (req, res) => {
     if (autoConfirm) {
       await logUsage({
         userId,
-        memberCode: memberCode(userId),
+        memberCode: displayMemberCode(user ?? { id: userId }),
         name: user ? `${user.firstName} ${user.lastName}` : undefined,
         source: "booking",
         detail: `จอง (ยืนยันอัตโนมัติ) ${date} ${startTime}-${endTime}`,
@@ -672,7 +672,7 @@ router.patch("/:id", authenticate, async (req, res) => {
     if (didConfirm) {
       await logUsage({
         userId: existing.userId,
-        memberCode: memberCode(existing.userId),
+        memberCode: displayMemberCode(user ?? { id: existing.userId }),
         name: user ? `${user.firstName} ${user.lastName}` : undefined,
         source: "booking",
         detail: `ยืนยันการจอง ${existing.date} ${existing.startTime}-${existing.endTime}`,

@@ -5,7 +5,7 @@ import { eq, or, ilike, sql, and, inArray, gte } from "drizzle-orm";
 import { authenticate, requireAdmin, isAdminRole } from "../../middlewares/auth.js";
 import { attachBranch, branchEq, newRowBranch } from "../../middlewares/branch.js";
 import { backupUsers, formatBackupUser } from "../../lib/backup.js";
-import { memberCode } from "../../lib/memberCode.js";
+import { displayMemberCode } from "../../lib/memberCode.js";
 import { initMemberFolder } from "../../lib/memberLog.js";
 import { computeTier } from "../../lib/memberTier.js";
 
@@ -13,7 +13,7 @@ const router = Router();
 
 function formatUser(user: typeof usersTable.$inferSelect) {
   const { passwordHash: _, ...rest } = user;
-  return { ...rest, memberCode: memberCode(user.id), createdAt: rest.createdAt.toISOString() };
+  return { ...rest, memberCode: displayMemberCode(user), createdAt: rest.createdAt.toISOString() };
 }
 
 // GET /users/me/stats — the signed-in member's own swim activity stats.

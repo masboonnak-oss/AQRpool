@@ -3,7 +3,8 @@
 // from the Aquarich API (:5000) using the member's own JWT (pool_token).
 // Run:  node gemma-chat/server.mjs   ->  test console at http://127.0.0.1:8787
 import { createServer } from "node:http";
-import { readFile, mkdir, appendFile } from "node:fs/promises";
+import { readFile, mkdir, writeFile, rm } from "node:fs/promises";
+import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -22,7 +23,80 @@ const CHAT_LOG_DIR = process.env.CHAT_LOG_DIR || join(__dir, "..", "artifacts", 
 const KNOWLEDGE_FILE = process.env.KNOWLEDGE_FILE || join(__dir, "knowledge.md");
 const PERSONA_FILE = process.env.PERSONA_FILE || join(__dir, "persona.md");
 
+if (process.env.NODE_ENV === "production" && (!process.env.ADMIN_KEY || process.env.ADMIN_KEY === "admin")) {
+  throw new Error("ADMIN_KEY must be set to a non-default value in production");
+}
+
 const dayFmt = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Bangkok", year: "numeric", month: "2-digit", day: "2-digit" });
+const VAULT_ALGO = "aes-256-gcm";
+const VAULT_VERSION = "vault:v1";
+const DEV_FALLBACK_KEY = "pooledit-local-development-data-vault-key-change-before-production";
+
+function keyMaterial() {
+  const key = process.env.DATA_ENCRYPTION_KEY || process.env.BACKUP_ENCRYPTION_KEY;
+  if (!key && process.env.NODE_ENV === "production") {
+    throw new Error("DATA_ENCRYPTION_KEY is required in production to protect chat logs");
+  }
+  return key || DEV_FALLBACK_KEY;
+}
+
+function keyBuffer() {
+  const raw = keyMaterial().trim();
+  if (/^[a-f0-9]{64}$/i.test(raw)) return Buffer.from(raw, "hex");
+  try {
+    const b64 = Buffer.from(raw, "base64");
+    if (b64.length === 32) return b64;
+  } catch {
+    // Fall through to hash derivation.
+  }
+  return crypto.createHash("sha256").update(raw).digest();
+}
+
+function encryptText(plainText) {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv(VAULT_ALGO, keyBuffer(), iv);
+  const encrypted = Buffer.concat([cipher.update(plainText, "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return JSON.stringify({
+    version: VAULT_VERSION,
+    alg: VAULT_ALGO,
+    iv: iv.toString("base64"),
+    tag: tag.toString("base64"),
+    data: encrypted.toString("base64"),
+  });
+}
+
+function decryptText(payload) {
+  const parsed = JSON.parse(payload);
+  if (parsed.version !== VAULT_VERSION || parsed.alg !== VAULT_ALGO || !parsed.iv || !parsed.tag || !parsed.data) {
+    throw new Error("Invalid encrypted vault payload");
+  }
+  const decipher = crypto.createDecipheriv(VAULT_ALGO, keyBuffer(), Buffer.from(parsed.iv, "base64"));
+  decipher.setAuthTag(Buffer.from(parsed.tag, "base64"));
+  const decrypted = Buffer.concat([
+    decipher.update(Buffer.from(parsed.data, "base64")),
+    decipher.final(),
+  ]);
+  return decrypted.toString("utf8");
+}
+
+async function appendEncryptedLine(filePath, line) {
+  const encryptedPath = filePath.endsWith(".enc") ? filePath : `${filePath}.enc`;
+  let existing = "";
+  try {
+    existing = decryptText(await readFile(encryptedPath, "utf-8"));
+  } catch {
+    try {
+      existing = await readFile(filePath, "utf-8");
+    } catch {
+      existing = "";
+    }
+  }
+  await writeFile(encryptedPath, encryptText(existing + line), "utf-8");
+  if (encryptedPath !== filePath) {
+    await rm(filePath, { force: true });
+  }
+}
 
 // Lightweight intent classification (keyword-based) to organize what customers want.
 function detectIntent(text) {
@@ -57,9 +131,9 @@ async function logChat(entry) {
     await mkdir(CHAT_LOG_DIR, { recursive: true });
     const now = new Date();
     const line = JSON.stringify({ at: now.toISOString(), atLocal: now.toLocaleString("th-TH", { timeZone: "Asia/Bangkok", hour12: false }), ...entry }) + "\n";
-    await appendFile(join(CHAT_LOG_DIR, `chat-${dayFmt.format(now)}.jsonl`), line, "utf-8");
+    await appendEncryptedLine(join(CHAT_LOG_DIR, `chat-${dayFmt.format(now)}.jsonl`), line);
     await mkdir(join(CHAT_LOG_DIR, "users"), { recursive: true });
-    await appendFile(join(CHAT_LOG_DIR, "users", `${entry.userId != null ? entry.userId : "anonymous"}.jsonl`), line, "utf-8");
+    await appendEncryptedLine(join(CHAT_LOG_DIR, "users", `${entry.userId != null ? entry.userId : "anonymous"}.jsonl`), line);
   } catch { /* logging must never break chat */ }
 }
 
@@ -594,5 +668,5 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, () =>
-  console.log(`Aquarich AI gateway on http://127.0.0.1:${PORT}  (API=${API}, model=${MODEL}, admin key "${ADMIN_KEY}")`)
+  console.log(`Aquarich AI gateway on http://127.0.0.1:${PORT}  (API=${API}, model=${MODEL}, admin key configured=${Boolean(ADMIN_KEY)})`)
 );

@@ -1,3 +1,4 @@
+import "./lib/env.js";
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";

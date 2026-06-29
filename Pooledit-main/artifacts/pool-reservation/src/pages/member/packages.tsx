@@ -212,11 +212,12 @@ export const Packages: FC = () => {
                     </div>
                   ))}
                 </div>
-                {!owned && (
-                  <Button className="w-full" onClick={() => openBuy(pkg)}>
-                    <ShoppingBag className="w-4 h-4 mr-2" />{t("pkg.buy")}
-                  </Button>
-                )}
+                {/* Repurchase is always allowed — buying again extends time and stacks
+                    remaining uses (quota accumulates across the member's active packages). */}
+                <Button className="w-full" variant={owned ? "outline" : "default"} onClick={() => openBuy(pkg)}>
+                  <ShoppingBag className="w-4 h-4 mr-2" />{owned ? "ซื้อเพิ่ม / ต่ออายุ" : t("pkg.buy")}
+                </Button>
+                {owned && <p className="text-[11px] text-center text-muted-foreground">ซื้อซ้ำได้ไม่จำกัด — เพิ่มจำนวนครั้ง & ต่อเวลาให้อัตโนมัติ</p>}
               </CardContent>
             </Card>
           );

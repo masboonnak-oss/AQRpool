@@ -6,7 +6,7 @@ import {
   LayoutDashboard, CalendarDays, CalendarPlus, Calendar, User,
   Settings, Users, LogOut, Droplets, Building2, GraduationCap,
   Bell, Wallet, CreditCard, Crown, MessageCircle, QrCode, ScanLine, ShoppingBag, Bot, Package, Sparkles, Palette, LifeBuoy, Clock, TrendingUp, CalendarOff,
-  ClipboardList, ShieldCheck, RefreshCw, Star, Ticket,
+  ClipboardList, ShieldCheck, RefreshCw, Star, Ticket, Receipt,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -146,6 +146,7 @@ export const Sidebar: FC = () => {
       links: [
         { href: "/admin/products", label: "ผลิตภัณฑ์", icon: ShoppingBag },
         { href: "/admin/orders", label: "คำสั่งซื้อ", icon: Package, badge: pendingOrders > 0 ? pendingOrders : undefined },
+        { href: "/admin/sales", label: "ประวัติการขาย", icon: Receipt },
       ],
     },
     {

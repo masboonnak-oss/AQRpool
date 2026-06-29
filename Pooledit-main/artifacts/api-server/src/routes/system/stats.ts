@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { db, reservationsTable, usersTable, facilitiesTable, instructorsTable, membershipPackagesTable, branchesTable, ordersTable, attendanceTable } from "@workspace/db";
-import { eq, gte, lte, and, sql, inArray, isNull, asc } from "drizzle-orm";
+import { db, reservationsTable, usersTable, facilitiesTable, instructorsTable, membershipPackagesTable, memberPackagesTable, branchesTable, ordersTable, attendanceTable } from "@workspace/db";
+import { eq, gte, lte, and, sql, inArray, isNull, asc, desc } from "drizzle-orm";
 import { authenticate, requireAdmin } from "../../middlewares/auth.js";
 import { attachBranch, branchEq } from "../../middlewares/branch.js";
 import { displayMemberCode } from "../../lib/memberCode.js";
@@ -227,6 +227,75 @@ router.get("/top-users", authenticate, requireAdmin, async (req, res) => {
     return res.json(rows.map((r) => ({ ...r, memberCode: displayMemberCode(r) })));
   } catch {
     return res.status(500).json({ error: "Failed to get top users" });
+  }
+});
+
+// GET /stats/sales?from=&to=&q= — admin: unified sales history (package purchases +
+// shop orders) sorted newest-first, with per-type totals. Date range + name search.
+router.get("/sales", authenticate, requireAdmin, attachBranch, async (req, res) => {
+  try {
+    const from = typeof req.query.from === "string" && req.query.from ? new Date(`${req.query.from}T00:00:00`) : null;
+    const to = typeof req.query.to === "string" && req.query.to ? new Date(`${req.query.to}T23:59:59.999`) : null;
+    const q = typeof req.query.q === "string" ? req.query.q.trim().toLowerCase() : "";
+    const inRange = (d: Date) => (!from || d >= from) && (!to || d <= to);
+
+    // Package purchases (each member_packages row = one purchase).
+    const pkgRows = await db
+      .select({ mp: memberPackagesTable, pkg: membershipPackagesTable, u: usersTable })
+      .from(memberPackagesTable)
+      .innerJoin(membershipPackagesTable, eq(memberPackagesTable.packageId, membershipPackagesTable.id))
+      .innerJoin(usersTable, eq(memberPackagesTable.userId, usersTable.id))
+      .where(branchEq(req, memberPackagesTable.branchId))
+      .orderBy(desc(memberPackagesTable.createdAt));
+
+    // Shop orders (exclude cancelled from sales).
+    const orderRows = await db
+      .select({ o: ordersTable, u: usersTable })
+      .from(ordersTable)
+      .innerJoin(usersTable, eq(ordersTable.userId, usersTable.id))
+      .where(branchEq(req, ordersTable.branchId))
+      .orderBy(desc(ordersTable.createdAt));
+
+    type Sale = { kind: "package" | "product"; date: string; memberId: number; memberName: string; memberCode: string; detail: string; amount: number; status: string };
+    const sales: Sale[] = [];
+
+    for (const { mp, pkg, u } of pkgRows) {
+      if (!inRange(mp.createdAt)) continue;
+      sales.push({
+        kind: "package", date: mp.createdAt.toISOString(), memberId: u.id,
+        memberName: `${u.firstName} ${u.lastName}`, memberCode: displayMemberCode(u),
+        detail: pkg.name, amount: Number(mp.pricePaid), status: mp.status,
+      });
+    }
+    for (const { o, u } of orderRows) {
+      if (o.status === "cancelled" || !inRange(o.createdAt)) continue;
+      let count = 0;
+      try { const items = JSON.parse(o.items); count = Array.isArray(items) ? items.reduce((s: number, it: any) => s + (Number(it.qty) || 1), 0) : 0; } catch { /* ignore */ }
+      sales.push({
+        kind: "product", date: o.createdAt.toISOString(), memberId: u.id,
+        memberName: `${u.firstName} ${u.lastName}`, memberCode: displayMemberCode(u),
+        detail: count ? `สินค้า ${count} ชิ้น` : "คำสั่งซื้อสินค้า", amount: Number(o.subtotal), status: o.status,
+      });
+    }
+
+    const filtered = q
+      ? sales.filter((s) => s.memberName.toLowerCase().includes(q) || s.memberCode.toLowerCase().includes(q) || s.detail.toLowerCase().includes(q))
+      : sales;
+    filtered.sort((a, b) => b.date.localeCompare(a.date));
+
+    const packageTotal = filtered.filter((s) => s.kind === "package").reduce((sum, s) => sum + s.amount, 0);
+    const productTotal = filtered.filter((s) => s.kind === "product").reduce((sum, s) => sum + s.amount, 0);
+
+    return res.json({
+      sales: filtered,
+      summary: {
+        packageTotal, productTotal, total: packageTotal + productTotal,
+        packageCount: filtered.filter((s) => s.kind === "package").length,
+        productCount: filtered.filter((s) => s.kind === "product").length,
+      },
+    });
+  } catch {
+    return res.status(500).json({ error: "Failed to get sales" });
   }
 });
 

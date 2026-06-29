@@ -58,6 +58,7 @@ const AdminHelpCenter = lazy(() => import("@/pages/admin/help-center").then((m) 
 const AdminAuditLogs = lazy(() => import("@/pages/admin/audit-logs").then((m) => ({ default: m.AdminAuditLogs })));
 const AdminReviews = lazy(() => import("@/pages/admin/reviews").then((m) => ({ default: m.AdminReviews })));
 const AdminCoupons = lazy(() => import("@/pages/admin/coupons").then((m) => ({ default: m.AdminCoupons })));
+const AdminSales = lazy(() => import("@/pages/admin/sales").then((m) => ({ default: m.AdminSales })));
 const AdminUpdate = lazy(() => import("@/pages/admin/update").then((m) => ({ default: m.AdminUpdate })));
 
 const queryClient = new QueryClient({
@@ -152,6 +153,7 @@ function Router() {
         <Route path="/admin/audit-logs"><ProtectedRoute component={AdminAuditLogs} adminOnly /></Route>
         <Route path="/admin/reviews"><ProtectedRoute component={AdminReviews} adminOnly /></Route>
         <Route path="/admin/coupons"><ProtectedRoute component={AdminCoupons} adminOnly /></Route>
+        <Route path="/admin/sales"><ProtectedRoute component={AdminSales} adminOnly /></Route>
         <Route path="/admin/update"><ProtectedRoute component={AdminUpdate} devOnly /></Route>
 
         <Route component={NotFound} />

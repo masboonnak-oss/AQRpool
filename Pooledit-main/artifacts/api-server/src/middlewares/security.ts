@@ -101,7 +101,12 @@ export function securityHeaders() {
     res.setHeader("Permissions-Policy", "camera=(self), microphone=(), geolocation=(), payment=()");
     res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
     res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+    res.setHeader("X-Permitted-Cross-Domain-Policies", "none");
     res.setHeader("Content-Security-Policy", contentSecurityPolicy);
+    // HSTS — force HTTPS for 2 years (prod only; harmless to omit on local http).
+    if (isProduction) {
+      res.setHeader("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+    }
     next();
   };
 }

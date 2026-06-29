@@ -36,6 +36,16 @@ type ResultData = {
   packageName?: string | null;
 };
 
+type Candidate = {
+  id: number;
+  code: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  houseNumber: string | null;
+  profileImageUrl?: string | null;
+};
+
 const ELEMENT_ID = "qr-reader";
 
 export function AdminCheckinScan() {
@@ -46,6 +56,7 @@ export function AdminCheckinScan() {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [scanning, setScanning] = useState(false);
   const [manual, setManual] = useState("");
+  const [candidates, setCandidates] = useState<Candidate[] | null>(null);
   const [lookup, setLookup] = useState<LookupData | null>(null);
   const [result, setResult] = useState<ResultData | null>(null);
   const [selectedMemberPackageId, setSelectedMemberPackageId] = useState<number | null>(null);
@@ -68,6 +79,7 @@ export function AdminCheckinScan() {
   async function startScanner() {
     setResult(null);
     setLookup(null);
+    setCandidates(null);
     setSelectedMemberPackageId(null);
     try {
       const s = new Html5Qrcode(ELEMENT_ID);
@@ -92,13 +104,13 @@ export function AdminCheckinScan() {
     }
   }
 
-  async function doLookup(code: string) {
-    const c = code.trim();
-    if (!c) return;
+  // Shared lookup: `query` is the lookup querystring, `code` is what the later POST /checkin
+  // uses to re-resolve the member (their phone/ART code — both resolvable server-side).
+  async function fetchLookup(query: string, code: string) {
     setBusy(true);
     setResult(null);
     try {
-      const res = await fetch(`${baseUrl}/api/checkin/lookup?token=${encodeURIComponent(c)}`, {
+      const res = await fetch(`${baseUrl}/api/checkin/lookup?${query}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -107,9 +119,50 @@ export function AdminCheckinScan() {
         setSelectedMemberPackageId(null);
         toast({ title: "ไม่พบสมาชิก", description: data.error, variant: "destructive" });
       } else {
+        setCandidates(null);
         const packages = (data.packages ?? []) as LookupPackage[];
-        setLookup({ ...data, code: c, packages });
+        setLookup({ ...data, code, packages });
         setSelectedMemberPackageId(packages.find((p) => p.canUse)?.memberPackageId ?? null);
+      }
+    } catch {
+      toast({ title: "เกิดข้อผิดพลาด", variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // QR scan path: resolve directly by the scanned token.
+  function doLookup(code: string) {
+    const c = code.trim();
+    if (!c) return;
+    return fetchLookup(`token=${encodeURIComponent(c)}`, c);
+  }
+
+  // Admin picks a candidate from the name/phone search.
+  function doLookupById(c: Candidate) {
+    return fetchLookup(`memberId=${c.id}`, c.code);
+  }
+
+  // Manual search box: name / phone / member code → candidate list (1 result auto-opens).
+  async function doSearch(q: string) {
+    const term = q.trim();
+    if (!term) return;
+    setBusy(true);
+    setResult(null);
+    setLookup(null);
+    try {
+      const res = await fetch(`${baseUrl}/api/checkin/search?q=${encodeURIComponent(term)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      const members = (data.members ?? []) as Candidate[];
+      if (members.length === 0) {
+        setCandidates(null);
+        toast({ title: "ไม่พบสมาชิก", description: "ลองค้นด้วยเบอร์โทร ชื่อจริง หรือรหัสสมาชิก", variant: "destructive" });
+      } else if (members.length === 1) {
+        await doLookupById(members[0]);
+      } else {
+        setCandidates(members);
       }
     } catch {
       toast({ title: "เกิดข้อผิดพลาด", variant: "destructive" });
@@ -180,22 +233,49 @@ export function AdminCheckinScan() {
       <Card className="rounded-2xl">
         <CardContent className="p-4 space-y-2">
           <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            ค้นหาด้วยรหัสสมาชิก / เบอร์โทร / QR
+            ค้นหาด้วยชื่อจริง / เบอร์โทร / รหัสสมาชิก
           </label>
           <div className="flex gap-2">
             <Input
               value={manual}
               onChange={(e) => setManual(e.target.value)}
-              placeholder="เช่น ART00027 หรือ 0812345678"
+              placeholder="เช่น สมชาย, 0812345678, ART00027"
               inputMode="search"
-              onKeyDown={(e) => e.key === "Enter" && doLookup(manual)}
+              onKeyDown={(e) => e.key === "Enter" && doSearch(manual)}
             />
-            <Button variant="outline" disabled={busy || !manual.trim()} onClick={() => doLookup(manual)} className="gap-1.5 shrink-0">
+            <Button variant="outline" disabled={busy || !manual.trim()} onClick={() => doSearch(manual)} className="gap-1.5 shrink-0">
               <Search className="w-4 h-4" /> ค้นหา
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {candidates && candidates.length > 0 && !lookup && (
+        <Card className="rounded-2xl">
+          <CardContent className="p-4 space-y-2">
+            <div className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              พบ {candidates.length} คน — เลือกสมาชิก
+            </div>
+            <div className="grid gap-2">
+              {candidates.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => doLookupById(c)}
+                  className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 text-left transition-all hover:border-primary/50 hover:bg-primary/5 disabled:opacity-50"
+                >
+                  <MemberAvatar firstName={c.firstName} lastName={c.lastName} src={c.profileImageUrl} className="w-10 h-10 text-sm" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-bold">{c.firstName} {c.lastName}</div>
+                    <div className="truncate text-xs text-muted-foreground">{c.phone || c.code}{c.houseNumber ? ` · บ้าน ${c.houseNumber}` : ""}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {lookup && (
         <Card className="rounded-2xl border-primary/40 ring-2 ring-primary/10">

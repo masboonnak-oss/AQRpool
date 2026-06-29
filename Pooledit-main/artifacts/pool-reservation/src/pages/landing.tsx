@@ -195,7 +195,7 @@ export const Landing: FC = () => {
             <p className="mt-2 max-w-2xl text-sm text-white/80 sm:text-base">{copy.heroTag}</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg" className="h-12 rounded-lg bg-[#1378B8] px-7 text-base font-bold text-white hover:bg-[#0F6298]">
-                <Link href="/book">{copy.book}<CalendarCheck className="ml-2 h-5 w-5" /></Link>
+                <Link href="/login">{copy.login}<ArrowRight className="ml-2 h-5 w-5" /></Link>
               </Button>
               <Button asChild size="lg" className="h-12 rounded-lg bg-[#F2C200] px-7 text-base font-bold text-[#1B3A5B] hover:bg-[#e3b500]">
                 <Link href="/register">{copy.register}<ArrowRight className="ml-2 h-5 w-5" /></Link>

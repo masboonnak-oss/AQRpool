@@ -277,8 +277,9 @@ router.get("/teaching", authenticate, attachBranch, async (req, res) => {
     ));
 
     // Map package id -> name so each teaching slot can show its assigned course.
-    const pkgRows = await db.select({ id: membershipPackagesTable.id, name: membershipPackagesTable.name }).from(membershipPackagesTable);
+    const pkgRows = await db.select({ id: membershipPackagesTable.id, name: membershipPackagesTable.name, categoryId: membershipPackagesTable.categoryId }).from(membershipPackagesTable);
     const pkgName = new Map(pkgRows.map((p) => [p.id, p.name]));
+    const pkgCategory = new Map(pkgRows.map((p) => [p.id, p.categoryId]));
 
     const applies = (row: typeof instructorAvailabilityTable.$inferSelect) =>
       (row.kind === "date" && row.date === date) || (row.kind === "weekly" && row.dayOfWeek === dayOfWeek);
@@ -321,6 +322,9 @@ router.get("/teaching", authenticate, attachBranch, async (req, res) => {
           note: cover.note,
           packageId: cover.packageId ?? null,
           packageName: cover.packageId ? (pkgName.get(cover.packageId) ?? null) : null,
+          // Category of the pinned course — lets the member book with any package of the
+          // same category (หมวดหมู่คอส), not only the exact course package.
+          categoryId: cover.packageId ? (pkgCategory.get(cover.packageId) ?? null) : null,
           bookedPeople,
           maxPeople,
           remainingPeople,

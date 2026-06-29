@@ -473,6 +473,7 @@ router.get("/my-usage", authenticate, async (req, res) => {
       packages: usages.map((u) => ({
         memberPackageId: u.memberPackage.id,
         packageId: u.package.id,
+        categoryId: u.package.categoryId,
         name: u.package.name,
         endDate: u.memberPackage.endDate.toISOString(),
         quota: u.quota,

@@ -471,7 +471,22 @@ router.post("/", authenticate, attachBranch, async (req, res) => {
     const coursePackageId = instructor ? await instructorSlotPackageId(instructor.id, date, startTime, endTime) : null;
     let selectedUsage: (typeof activeUsages)[number] | undefined;
     if (coursePackageId != null) {
-      selectedUsage = activeUsages.find((u) => u.memberPackage.packageId === coursePackageId && (u.remaining === null || u.remaining > 0));
+      // Resolve the pinned course's category. Members often hold a DIFFERENT package in
+      // the same category (a renewed/alternate course of the same type) — deduct from any
+      // active package of the matching category, not only the exact pinned package. Falls
+      // back to exact-package match when the course has no category (backward compatible).
+      const [coursePkg] = await db
+        .select({ categoryId: membershipPackagesTable.categoryId })
+        .from(membershipPackagesTable)
+        .where(eq(membershipPackagesTable.id, coursePackageId))
+        .limit(1);
+      const courseCategoryId = coursePkg?.categoryId ?? null;
+      selectedUsage = activeUsages.find(
+        (u) =>
+          (u.remaining === null || u.remaining > 0) &&
+          (u.memberPackage.packageId === coursePackageId ||
+            (courseCategoryId != null && u.package.categoryId === courseCategoryId)),
+      );
       if (!selectedUsage) {
         return res.status(400).json({ error: "คุณยังไม่มีแพ็กเกจสำหรับคอร์สนี้ หรือจำนวนครั้งคงเหลือหมด", needPackage: true });
       }

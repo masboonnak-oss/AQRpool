@@ -29,6 +29,7 @@ type TeachingSlot = {
   note: string | null;
   packageId: number | null;
   packageName: string | null;
+  categoryId: number | null;
   bookedPeople: number;
   maxPeople: number;
   remainingPeople: number;
@@ -172,6 +173,7 @@ export const Book: FC = () => {
     packages: Array<{
       memberPackageId: number;
       packageId: number;
+      categoryId: number | null;
       name: string;
       endDate: string;
       quota: number | null;
@@ -197,7 +199,14 @@ export const Book: FC = () => {
   // by that course, so the customer doesn't choose it (and can't pick the wrong one).
   const courseRequiredId = selectedTeacherSlot?.packageId ?? null;
   const courseName = selectedTeacherSlot?.packageName ?? null;
-  const courseUsablePackage = courseRequiredId ? (usablePackages.find((p) => p.packageId === courseRequiredId) ?? null) : null;
+  const courseCategoryId = selectedTeacherSlot?.categoryId ?? null;
+  // Match the pinned course by exact package OR by the same category (หมวดหมู่คอส), so a
+  // member holding any package of that category can book — mirrors the server-side rule.
+  const courseUsablePackage = courseRequiredId
+    ? (usablePackages.find(
+        (p) => p.packageId === courseRequiredId || (courseCategoryId != null && p.categoryId === courseCategoryId),
+      ) ?? null)
+    : null;
   const courseLocked = courseRequiredId != null; // this slot dictates the course
   const courseMissing = courseLocked && !courseUsablePackage; // member lacks/used up that course
 

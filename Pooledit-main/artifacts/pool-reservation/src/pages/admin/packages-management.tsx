@@ -11,14 +11,18 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Crown, Calendar, Percent, Trash2 } from "lucide-react";
+import { Plus, Pencil, Crown, Calendar, Percent, Trash2, Tags } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { ImageUpload } from "@/components/image-upload";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PackageCategoriesDialog, type Category } from "./package-categories-dialog";
 
-type Package = { id: number; name: string; nameEn: string; description?: string; imageUrl?: string | null; price: number; durationDays: number; benefits?: string; bookingDiscount: number; maxBookingsPerMonth?: number; isActive: boolean; sortOrder: number };
+const NO_CATEGORY = "none";
 
-const empty = (): Omit<Package, "id"> => ({ name: "", nameEn: "", description: "", imageUrl: "", price: 0, durationDays: 30, benefits: "", bookingDiscount: 0, maxBookingsPerMonth: undefined, isActive: true, sortOrder: 0 });
+type Package = { id: number; name: string; nameEn: string; description?: string; imageUrl?: string | null; price: number; durationDays: number; benefits?: string; bookingDiscount: number; maxBookingsPerMonth?: number; isActive: boolean; sortOrder: number; categoryId?: number | null };
+
+const empty = (): Omit<Package, "id"> => ({ name: "", nameEn: "", description: "", imageUrl: "", price: 0, durationDays: 30, benefits: "", bookingDiscount: 0, maxBookingsPerMonth: undefined, isActive: true, sortOrder: 0, categoryId: null });
 
 export const AdminPackagesManagement: FC = () => {
   const { toast } = useToast();
@@ -26,8 +30,10 @@ export const AdminPackagesManagement: FC = () => {
   const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
 
   const [packages, setPackages] = useState<Package[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialog, setDialog] = useState<"" | "add" | "edit">("");
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [form, setForm] = useState(empty());
   const [editId, setEditId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -41,7 +47,14 @@ export const AdminPackagesManagement: FC = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchPackages(); }, []);
+  const fetchCategories = async () => {
+    const res = await fetch(`${baseUrl}/api/package-categories/all`, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.ok) setCategories(await res.json());
+  };
+
+  useEffect(() => { fetchPackages(); fetchCategories(); }, []);
+
+  const categoryName = (id?: number | null) => categories.find((c) => c.id === id)?.name;
 
   const openAdd = () => { setForm(empty()); setDialog("add"); };
   const openEdit = (pkg: Package) => { setForm({ ...pkg }); setEditId(pkg.id); setDialog("edit"); };
@@ -102,7 +115,12 @@ export const AdminPackagesManagement: FC = () => {
         title="จัดการแพ็กเกจสมาชิก"
         icon={Crown}
         gradient="from-amber-400 to-orange-600"
-        actions={<Button onClick={openAdd}><Plus className="w-4 h-4 mr-2" />เพิ่มแพ็กเกจ</Button>}
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setCategoriesOpen(true)}><Tags className="w-4 h-4 mr-2" />จัดการหมวดหมู่</Button>
+            <Button onClick={openAdd}><Plus className="w-4 h-4 mr-2" />เพิ่มแพ็กเกจ</Button>
+          </div>
+        }
       />
 
       {loading ? (
@@ -122,6 +140,9 @@ export const AdminPackagesManagement: FC = () => {
                   </div>
                   <Badge variant={pkg.isActive ? "default" : "secondary"}>{pkg.isActive ? "ใช้งาน" : "ปิด"}</Badge>
                 </div>
+                {categoryName(pkg.categoryId) && (
+                  <Badge variant="outline" className="gap-1"><Tags className="w-3 h-3" />{categoryName(pkg.categoryId)}</Badge>
+                )}
                 <p className="text-2xl font-display font-extrabold text-gradient">฿{pkg.price.toLocaleString()}</p>
                 <div className="text-sm text-muted-foreground space-y-1">
                   <div className="flex items-center gap-1"><Calendar className="w-3 h-3" />{pkg.durationDays} วัน</div>
@@ -145,6 +166,21 @@ export const AdminPackagesManagement: FC = () => {
             {([["name", "ชื่อ (ภาษาไทย)"], ["nameEn", "ชื่อ (English)"]] as const).map(([k, label]) => (
               <div key={k}><Label>{label}</Label><Input value={form[k] as string} onChange={f(k)} className="mt-1" /></div>
             ))}
+            <div>
+              <Label>หมวดหมู่</Label>
+              <Select
+                value={form.categoryId != null ? String(form.categoryId) : NO_CATEGORY}
+                onValueChange={(v) => setForm((p) => ({ ...p, categoryId: v === NO_CATEGORY ? null : Number(v) }))}
+              >
+                <SelectTrigger className="mt-1"><SelectValue placeholder="ไม่ระบุหมวดหมู่" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_CATEGORY}>ไม่ระบุหมวดหมู่</SelectItem>
+                  {categories.filter((c) => c.isActive || c.id === form.categoryId).map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>{c.name}{!c.isActive ? " (ปิด)" : ""}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div>
               <Label>รูปภาพแพ็กเกจ</Label>
               <ImageUpload value={form.imageUrl} onChange={(v) => setForm((p) => ({ ...p, imageUrl: v ?? "" }))} shape="wide" maxMb={5} />
@@ -184,6 +220,13 @@ export const AdminPackagesManagement: FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PackageCategoriesDialog
+        open={categoriesOpen}
+        onOpenChange={setCategoriesOpen}
+        categories={categories}
+        onChanged={() => { fetchCategories(); fetchPackages(); }}
+      />
     </div>
   );
 };

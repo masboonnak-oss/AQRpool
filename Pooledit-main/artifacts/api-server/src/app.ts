@@ -6,7 +6,7 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import { ensureBackupFolder } from "./lib/backup.js";
 import { ensureDataDirs } from "./lib/dataPaths.js";
-import { corsOptions, intrusionGuard, noStoreForSensitiveRoutes, rateLimit, securityHeaders } from "./middlewares/security.js";
+import { corsOptions, intrusionGuard, noStoreForSensitiveRoutes, rateLimit, rateLimitIdentity, securityHeaders } from "./middlewares/security.js";
 import { auditRequests } from "./lib/audit.js";
 import { assertDataEncryptionReady } from "./lib/cryptoVault.js";
 import { runMigrations } from "./lib/migrate.js";
@@ -45,11 +45,14 @@ app.use(securityHeaders());
 app.use(cors(corsOptions()));
 app.use(intrusionGuard());
 app.use(noStoreForSensitiveRoutes());
-app.use("/api", rateLimit({ windowMs: 60_000, max: 240, keyPrefix: "api" }));
+// Rate-limit per authenticated user (falls back to IP for anonymous) so a shared
+// tunnel egress IP doesn't make 40 concurrent members trip 429 together.
+app.use("/api", rateLimit({ windowMs: 60_000, max: 240, keyPrefix: "api", key: rateLimitIdentity }));
 app.use("/api", rateLimit({
   windowMs: 60_000,
   max: 80,
   keyPrefix: "api-write",
+  key: rateLimitIdentity,
   skip: (req) => req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS",
 }));
 // 12mb so base64 payment-slip / product images fit (cart caps uploads at 5MB, +~33% base64)

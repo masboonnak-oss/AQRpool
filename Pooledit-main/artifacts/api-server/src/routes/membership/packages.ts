@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, membershipPackagesTable, memberPackagesTable, walletsTable, transactionsTable, usersTable, packageUsagesTable, reservationsTable, memberPackageEventsTable } from "@workspace/db";
+import { db, membershipPackagesTable, memberPackagesTable, walletsTable, transactionsTable, usersTable, packageUsagesTable, reservationsTable, memberPackageEventsTable, couponsTable, couponRedemptionsTable } from "@workspace/db";
 import { eq, desc, and, gte, lte, sql, inArray } from "drizzle-orm";
 import { authenticate, requireAdmin } from "../../middlewares/auth.js";
 import { attachBranch, branchEq, newRowBranch } from "../../middlewares/branch.js";
@@ -8,6 +8,7 @@ import { getActiveUsages } from "../../lib/packageUsage.js";
 import { appendMemberLog } from "../../lib/memberLog.js";
 import { computeTier } from "../../lib/memberTier.js";
 import { displayMemberCode } from "../../lib/memberCode.js";
+import { evaluateCoupon } from "../../lib/coupon.js";
 
 const router = Router();
 
@@ -53,10 +54,11 @@ router.get("/all", authenticate, requireAdmin, attachBranch, async (req, res) =>
 // POST /packages — admin: create
 router.post("/", authenticate, requireAdmin, attachBranch, async (req, res) => {
   try {
-    const { name, nameEn, description, descriptionEn, imageUrl, price, durationDays, benefits, benefitsEn, maxBookingsPerMonth, bookingDiscount, sortOrder } = req.body;
+    const { name, nameEn, description, descriptionEn, imageUrl, price, durationDays, benefits, benefitsEn, maxBookingsPerMonth, bookingDiscount, sortOrder, categoryId } = req.body;
     const [pkg] = await db.insert(membershipPackagesTable).values({
       name, nameEn: nameEn || name, description, descriptionEn, imageUrl: imageUrl || null, price: String(price), durationDays,
       benefits, benefitsEn, maxBookingsPerMonth, bookingDiscount: String(bookingDiscount || 0), sortOrder: sortOrder || 0,
+      categoryId: categoryId != null && categoryId !== "" ? Number(categoryId) : null,
       branchId: newRowBranch(req),
     }).returning();
     return res.status(201).json({ ...pkg, price: Number(pkg.price), bookingDiscount: Number(pkg.bookingDiscount) });
@@ -69,7 +71,7 @@ router.post("/", authenticate, requireAdmin, attachBranch, async (req, res) => {
 router.patch("/:id", authenticate, requireAdmin, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { name, nameEn, description, descriptionEn, imageUrl, price, durationDays, benefits, benefitsEn, maxBookingsPerMonth, bookingDiscount, isActive, sortOrder } = req.body;
+    const { name, nameEn, description, descriptionEn, imageUrl, price, durationDays, benefits, benefitsEn, maxBookingsPerMonth, bookingDiscount, isActive, sortOrder, categoryId } = req.body;
     const updates: any = {};
     if (name !== undefined) updates.name = name;
     if (nameEn !== undefined) updates.nameEn = nameEn;
@@ -84,6 +86,7 @@ router.patch("/:id", authenticate, requireAdmin, async (req, res) => {
     if (bookingDiscount !== undefined) updates.bookingDiscount = String(bookingDiscount);
     if (isActive !== undefined) updates.isActive = isActive;
     if (sortOrder !== undefined) updates.sortOrder = sortOrder;
+    if (categoryId !== undefined) updates.categoryId = categoryId != null && categoryId !== "" ? Number(categoryId) : null;
     const [pkg] = await db.update(membershipPackagesTable).set(updates).where(eq(membershipPackagesTable.id, id)).returning();
     if (!pkg) return res.status(404).json({ error: "Package not found" });
     return res.json({ ...pkg, price: Number(pkg.price), bookingDiscount: Number(pkg.bookingDiscount) });
@@ -502,7 +505,21 @@ router.post("/:id/purchase", authenticate, attachBranch, async (req, res) => {
       .where(and(eq(memberPackagesTable.userId, req.user!.userId), sql`${memberPackagesTable.status} <> 'cancelled'`));
     const tier = computeTier(Number(spentRow?.spent ?? 0));
     const discountPct = tier.discount;
-    const price = Math.round(listPrice * (1 - discountPct / 100));
+    const tierPrice = Math.round(listPrice * (1 - discountPct / 100));
+
+    // Optional discount coupon — stacks on top of the loyalty-tier price. If no code is
+    // sent, behaviour is unchanged. An invalid code fails here, before any wallet change.
+    const couponCode = typeof req.body?.couponCode === "string" ? req.body.couponCode.trim() : "";
+    let couponDiscount = 0;
+    let appliedCoupon: typeof couponsTable.$inferSelect | null = null;
+    if (couponCode) {
+      const result = await evaluateCoupon(couponCode, req.user!.userId, tierPrice);
+      if (!result.ok) return res.status(400).json({ error: result.error });
+      couponDiscount = result.discount;
+      appliedCoupon = result.coupon;
+    }
+
+    const price = Math.max(0, tierPrice - couponDiscount);
     const saved = listPrice - price;
 
     const wallet = await getOrCreateWallet(req.user!.userId);
@@ -517,9 +534,12 @@ router.post("/:id/purchase", authenticate, attachBranch, async (req, res) => {
       userId: req.user!.userId,
       amount: String(price),
       type: "package_purchase",
-      description: discountPct > 0
-        ? `ซื้อแพ็กเกจ: ${pkg.name} (ส่วนลดแรงค์ ${tier.label} ${discountPct}% -฿${saved.toLocaleString("th-TH")})`
-        : `ซื้อแพ็กเกจ: ${pkg.name}`,
+      description: (() => {
+        const parts: string[] = [];
+        if (discountPct > 0) parts.push(`ส่วนลดแรงค์ ${tier.label} ${discountPct}%`);
+        if (appliedCoupon) parts.push(`โค้ด ${appliedCoupon.code} -฿${couponDiscount.toLocaleString("th-TH")}`);
+        return parts.length ? `ซื้อแพ็กเกจ: ${pkg.name} (${parts.join(", ")})` : `ซื้อแพ็กเกจ: ${pkg.name}`;
+      })(),
       status: "completed",
       referenceId: packageId,
       branchId: newRowBranch(req),
@@ -536,8 +556,21 @@ router.post("/:id/purchase", authenticate, attachBranch, async (req, res) => {
       branchId: newRowBranch(req),
     }).returning();
 
+    // Record the coupon redemption (per-user limit + total usage tracking).
+    if (appliedCoupon) {
+      await db.insert(couponRedemptionsTable).values({
+        couponId: appliedCoupon.id,
+        userId: req.user!.userId,
+        amount: String(couponDiscount),
+      });
+      await db.update(couponsTable)
+        .set({ usedCount: sql`${couponsTable.usedCount} + 1` })
+        .where(eq(couponsTable.id, appliedCoupon.id));
+    }
+
     await appendMemberLog({ userId: req.user!.userId }, "activity", {
       action: "package_purchase", packageName: pkg.name, price, listPrice, tier: tier.id, discountPct,
+      couponCode: appliedCoupon?.code, couponDiscount,
     });
 
     return res.status(201).json({
@@ -549,6 +582,8 @@ router.post("/:id/purchase", authenticate, attachBranch, async (req, res) => {
       listPrice,
       discountPct,
       saved,
+      couponCode: appliedCoupon?.code ?? null,
+      couponDiscount,
       tier: tier.id,
       package: { ...pkg, price: Number(pkg.price) },
     });

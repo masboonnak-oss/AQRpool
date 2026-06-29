@@ -8,9 +8,9 @@ import { ColorWheel } from "@/components/color-wheel";
 import { applyThemeColor, deriveThemeVars, type ThemeColor } from "@/lib/theme-colors";
 import { FONTS, FONT_MAP, applyThemeFont, previewFontsHref } from "@/lib/theme-fonts";
 
-const DEFAULT: ThemeColor = { h: 46, s: 95, l: 47 };
+const DEFAULT: ThemeColor = { h: 212, s: 85, l: 33 };
 const PRESETS: { name: string; c: ThemeColor }[] = [
-  { name: "Aqua Rich Gold", c: { h: 46, s: 95, l: 47 } },
+  { name: "Aquarich Premium", c: { h: 212, s: 85, l: 33 } },
   { name: "ฟ้าน้ำทะเล", c: { h: 196, s: 90, l: 42 } },
   { name: "น้ำเงิน", c: { h: 222, s: 85, l: 55 } },
   { name: "ม่วง", c: { h: 270, s: 75, l: 58 } },

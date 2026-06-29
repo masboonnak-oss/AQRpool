@@ -10,6 +10,7 @@ import { ThemeProvider } from "@/hooks/use-theme";
 import { ThemeColorProvider } from "@/components/theme-color-provider";
 import { AppLayout } from "@/components/layout/app-layout";
 import { LandingPopup } from "@/components/LandingPopup";
+import { ErrorBoundary } from "@/components/error-boundary";
 const NotFound = lazy(() => import("@/pages/not-found"));
 const Landing = lazy(() => import("@/pages/landing").then((m) => ({ default: m.Landing })));
 const Login = lazy(() => import("@/pages/login").then((m) => ({ default: m.Login })));
@@ -30,6 +31,7 @@ const Services = lazy(() => import("@/pages/member/services").then((m) => ({ def
 const Cart = lazy(() => import("@/pages/member/cart").then((m) => ({ default: m.Cart })));
 const MyOrders = lazy(() => import("@/pages/member/my-orders").then((m) => ({ default: m.MyOrders })));
 const ChatPage = lazy(() => import("@/pages/member/chat").then((m) => ({ default: m.ChatPage })));
+const MemberReviews = lazy(() => import("@/pages/member/reviews").then((m) => ({ default: m.MemberReviews })));
 const Attendance = lazy(() => import("@/pages/attendance").then((m) => ({ default: m.Attendance })));
 const StaffTasks = lazy(() => import("@/pages/staff/tasks").then((m) => ({ default: m.StaffTasks })));
 const LeavePage = lazy(() => import("@/pages/leave").then((m) => ({ default: m.LeavePage })));
@@ -54,6 +56,8 @@ const AdminBranches = lazy(() => import("@/pages/admin/branches").then((m) => ({
 const AdminOverview = lazy(() => import("@/pages/admin/overview").then((m) => ({ default: m.AdminOverview })));
 const AdminHelpCenter = lazy(() => import("@/pages/admin/help-center").then((m) => ({ default: m.AdminHelpCenter })));
 const AdminAuditLogs = lazy(() => import("@/pages/admin/audit-logs").then((m) => ({ default: m.AdminAuditLogs })));
+const AdminReviews = lazy(() => import("@/pages/admin/reviews").then((m) => ({ default: m.AdminReviews })));
+const AdminCoupons = lazy(() => import("@/pages/admin/coupons").then((m) => ({ default: m.AdminCoupons })));
 const AdminUpdate = lazy(() => import("@/pages/admin/update").then((m) => ({ default: m.AdminUpdate })));
 
 const queryClient = new QueryClient({
@@ -122,6 +126,7 @@ function Router() {
         <Route path="/cart"><ProtectedRoute component={Cart} /></Route>
         <Route path="/my-orders"><ProtectedRoute component={MyOrders} /></Route>
         <Route path="/chat"><ProtectedRoute component={ChatPage} /></Route>
+        <Route path="/reviews"><ProtectedRoute component={MemberReviews} /></Route>
 
         <Route path="/admin"><ProtectedRoute component={AdminDashboard} adminOnly /></Route>
         <Route path="/admin/members"><ProtectedRoute component={AdminMembers} adminOnly /></Route>
@@ -145,6 +150,8 @@ function Router() {
         <Route path="/admin/chat"><ProtectedRoute component={ChatPage} adminOnly /></Route>
         <Route path="/admin/help"><ProtectedRoute component={AdminHelpCenter} adminOnly /></Route>
         <Route path="/admin/audit-logs"><ProtectedRoute component={AdminAuditLogs} adminOnly /></Route>
+        <Route path="/admin/reviews"><ProtectedRoute component={AdminReviews} adminOnly /></Route>
+        <Route path="/admin/coupons"><ProtectedRoute component={AdminCoupons} adminOnly /></Route>
         <Route path="/admin/update"><ProtectedRoute component={AdminUpdate} devOnly /></Route>
 
         <Route component={NotFound} />
@@ -155,6 +162,7 @@ function Router() {
 
 function App() {
   return (
+    <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <ThemeColorProvider>
@@ -176,6 +184,7 @@ function App() {
         </ThemeColorProvider>
       </ThemeProvider>
     </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

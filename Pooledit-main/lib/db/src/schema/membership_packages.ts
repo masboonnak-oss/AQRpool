@@ -17,6 +17,8 @@ export const membershipPackagesTable = pgTable("membership_packages", {
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   branchId: integer("branch_id").default(1),
+  // Managed category (package_categories.id); null = uncategorised. See 0010 migration.
+  categoryId: integer("category_id"),
 });
 
 export type MembershipPackage = typeof membershipPackagesTable.$inferSelect;

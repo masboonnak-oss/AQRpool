@@ -6,7 +6,7 @@ import {
   LayoutDashboard, CalendarDays, CalendarPlus, Calendar, User,
   Settings, Users, LogOut, Droplets, Building2, GraduationCap,
   Bell, Wallet, CreditCard, Crown, MessageCircle, QrCode, ScanLine, ShoppingBag, Bot, Package, Sparkles, Palette, LifeBuoy, Clock, TrendingUp, CalendarOff,
-  ClipboardList, ShieldCheck, RefreshCw,
+  ClipboardList, ShieldCheck, RefreshCw, Star, Ticket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -76,6 +76,7 @@ export const Sidebar: FC = () => {
       title: "บัญชีและช่วยเหลือ",
       links: [
         { href: "/chat", label: t("nav.chat"), icon: MessageCircle },
+        { href: "/reviews", label: "รีวิวสโมสร", icon: Star },
         { href: "/profile", label: t("nav.profile"), icon: User },
       ],
     },
@@ -137,6 +138,7 @@ export const Sidebar: FC = () => {
         { href: "/admin/members", label: t("nav.admin.members"), icon: Users },
         { href: "/admin/wallet", label: t("nav.admin.wallet"), icon: Wallet },
         { href: "/admin/packages", label: t("nav.admin.packages"), icon: Crown },
+        { href: "/admin/coupons", label: "คูปองส่วนลด", icon: Ticket },
       ],
     },
     {
@@ -152,6 +154,7 @@ export const Sidebar: FC = () => {
         { href: "/admin/announcements", label: t("nav.admin.announcements"), icon: Bell },
         { href: "/admin/chat", label: t("nav.admin.chat"), icon: MessageCircle, badge: unreadChat > 0 ? unreadChat : undefined },
         ...(isSuper ? [{ href: "/admin/ai-chat", label: "วิเคราะห์แชท AI", icon: Bot }] : []),
+        { href: "/admin/reviews", label: "รีวิวและเรตติ้ง", icon: Star },
         { href: "/admin/help", label: "ศูนย์ช่วยเหลือ", icon: LifeBuoy, badge: devUnread > 0 ? devUnread : undefined },
       ],
     },

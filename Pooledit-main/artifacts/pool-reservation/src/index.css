@@ -80,72 +80,73 @@
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
 
-  /* Soft cool off-white — easy on the eyes in bright morning light (was 45% 98%, too glaring) */
-  --background: 206 56% 97%;
-  --foreground: 212 54% 18%;
+  /* Premium corporate palette: deep ocean-navy as the trust anchor, gold as the
+     restrained luxury accent. Clean cool near-white canvas (no glare). */
+  --background: 210 40% 98%;
+  --foreground: 215 42% 15%;
 
-  --border: 205 36% 87%;
-  --input: 205 36% 87%;
-  --ring: 46 95% 49%;
+  --border: 214 28% 88%;
+  --input: 214 28% 88%;
+  --ring: 212 80% 40%;
 
-  /* Near-white with a faint cool tint instead of pure white — sits gently above the
-     background (still clearly elevated) without the harsh glare of #fff. */
+  /* True white cards on the cool canvas — crisp, clearly elevated, bank-statement clean. */
   --card: 0 0% 100%;
-  --card-foreground: 212 54% 18%;
-  --card-border: 205 36% 89%;
+  --card-foreground: 215 42% 15%;
+  --card-border: 214 28% 90%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 212 54% 18%;
-  --popover-border: 205 36% 89%;
+  --popover-foreground: 215 42% 15%;
+  --popover-border: 214 28% 90%;
 
-  --primary: 46 95% 47%;
-  --primary-foreground: 212 58% 15%;
+  /* Deep, confident ocean-navy — the colour of banks, airlines, enterprise. */
+  --primary: 212 85% 33%;
+  --primary-foreground: 0 0% 100%;
 
-  --secondary: 204 72% 93%;
-  --secondary-foreground: 210 60% 23%;
+  --secondary: 211 44% 93%;
+  --secondary-foreground: 214 46% 24%;
 
-  --muted: 205 46% 94%;
-  --muted-foreground: 211 21% 43%;
+  --muted: 213 34% 95%;
+  --muted-foreground: 214 14% 42%;
 
-  --accent: 198 76% 92%;
-  --accent-foreground: 204 74% 29%;
+  --accent: 205 64% 92%;
+  --accent-foreground: 212 72% 27%;
 
-  --destructive: 0 84% 60%;
+  --destructive: 0 75% 50%;
   --destructive-foreground: 0 0% 100%;
 
-  --sidebar: 207 58% 98%;
-  --sidebar-foreground: 212 54% 18%;
-  --sidebar-border: 205 36% 88%;
-  --sidebar-primary: 46 95% 47%;
-  --sidebar-primary-foreground: 212 58% 15%;
-  --sidebar-accent: 198 78% 92%;
-  --sidebar-accent-foreground: 204 74% 29%;
-  --sidebar-ring: 46 95% 49%;
+  --sidebar: 210 38% 98%;
+  --sidebar-foreground: 215 42% 15%;
+  --sidebar-border: 214 28% 89%;
+  --sidebar-primary: 212 85% 33%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 205 64% 93%;
+  --sidebar-accent-foreground: 212 72% 27%;
+  --sidebar-ring: 212 80% 40%;
 
-  /* Brand gradient (ocean: blue → cyan → teal) */
-  --brand-from: 46 95% 58%;
-  --brand-via: 198 74% 52%;
-  --brand-to: 210 54% 23%;
-  --glow: 46 95% 52%;
+  /* Brand gradient (premium ocean: blue → azure → deep navy — no gold, kept restrained) */
+  --brand-from: 205 88% 44%;
+  --brand-via: 196 80% 46%;
+  --brand-to: 214 78% 24%;
+  --glow: 208 85% 44%;
 
-  /* Warm accent — gold/amber paired with the ocean brand (the ~10% highlight) */
-  --gold: 46 95% 49%;
-  --gold-soft: 48 97% 64%;
-  --gold-deep: 41 94% 42%;
-  --brand-pink: 326 75% 50%;
+  /* Gold accent — a refined metallic gold (not a neon highlighter) for the ~10% luxury cues */
+  --gold: 43 80% 47%;
+  --gold-soft: 44 86% 60%;
+  --gold-deep: 38 82% 40%;
+  --brand-pink: 326 70% 50%;
 
-  /* Aqua spectrum charts */
-  --chart-1: 46 95% 49%;
-  --chart-2: 198 74% 52%;
-  --chart-3: 210 54% 23%;
-  --chart-4: 326 75% 50%;
-  --chart-5: 168 78% 42%;
+  /* Navy → azure → teal → gold spectrum charts */
+  --chart-1: 212 85% 40%;
+  --chart-2: 196 80% 46%;
+  --chart-3: 168 70% 40%;
+  --chart-4: 43 80% 50%;
+  --chart-5: 220 32% 55%;
 
-  --app-font-sans: 'Inter', 'Noto Sans Thai', 'Leelawadee UI', Tahoma, sans-serif;
-  --app-font-display: 'Sora', 'Noto Sans Thai', 'Leelawadee UI', Tahoma, sans-serif;
+  --app-font-sans: 'Plus Jakarta Sans', 'Noto Sans Thai', 'Leelawadee UI', Tahoma, sans-serif;
+  --app-font-display: 'Sora', 'Plus Jakarta Sans', 'Noto Sans Thai', 'Leelawadee UI', Tahoma, sans-serif;
   --app-font-serif: Georgia, serif;
   --app-font-mono: Menlo, monospace;
-  --radius: 0.75rem;
+  --radius: 0.625rem;
 
   --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
   --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
@@ -164,61 +165,63 @@
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  --background: 214 52% 7%;
+  /* Deep navy-black canvas — premium, low-glare, lets the gold accents read as luxury. */
+  --background: 216 50% 6%;
   --foreground: 210 40% 98%;
 
-  --border: 211 38% 18%;
-  --input: 211 38% 18%;
-  --ring: 47 95% 58%;
+  --border: 213 32% 17%;
+  --input: 213 32% 17%;
+  --ring: 205 85% 56%;
 
-  --card: 213 45% 10%;
+  --card: 215 44% 9%;
   --card-foreground: 210 40% 98%;
-  --card-border: 211 38% 18%;
+  --card-border: 213 32% 17%;
 
-  --popover: 213 47% 9%;
+  --popover: 215 46% 8%;
   --popover-foreground: 210 40% 98%;
-  --popover-border: 211 38% 18%;
+  --popover-border: 213 32% 17%;
 
-  --primary: 47 95% 58%;
-  --primary-foreground: 212 58% 13%;
+  /* Bright ocean-blue primary so it stays legible and confident on the dark navy. */
+  --primary: 205 88% 56%;
+  --primary-foreground: 214 60% 10%;
 
-  --secondary: 211 38% 16%;
+  --secondary: 213 34% 16%;
   --secondary-foreground: 210 40% 98%;
 
-  --muted: 211 36% 15%;
-  --muted-foreground: 205 20% 68%;
+  --muted: 213 30% 14%;
+  --muted-foreground: 210 18% 66%;
 
-  --accent: 199 58% 17%;
-  --accent-foreground: 195 88% 80%;
+  --accent: 205 50% 18%;
+  --accent-foreground: 200 85% 80%;
 
-  --destructive: 0 80% 62%;
+  --destructive: 0 75% 58%;
   --destructive-foreground: 0 0% 100%;
 
-  --sidebar: 214 52% 8%;
+  --sidebar: 216 50% 7%;
   --sidebar-foreground: 210 40% 98%;
-  --sidebar-border: 211 38% 17%;
-  --sidebar-primary: 47 95% 58%;
-  --sidebar-primary-foreground: 212 58% 13%;
-  --sidebar-accent: 199 58% 17%;
-  --sidebar-accent-foreground: 195 88% 80%;
-  --sidebar-ring: 47 95% 58%;
+  --sidebar-border: 213 32% 16%;
+  --sidebar-primary: 205 88% 56%;
+  --sidebar-primary-foreground: 214 60% 10%;
+  --sidebar-accent: 205 50% 18%;
+  --sidebar-accent-foreground: 200 85% 80%;
+  --sidebar-ring: 205 85% 56%;
 
-  --brand-from: 47 96% 62%;
-  --brand-via: 198 78% 56%;
-  --brand-to: 210 58% 28%;
-  --glow: 47 96% 58%;
+  --brand-from: 205 90% 58%;
+  --brand-via: 192 82% 52%;
+  --brand-to: 214 70% 32%;
+  --glow: 206 88% 54%;
 
-  /* Warm accent — a touch brighter on dark surfaces */
-  --gold: 47 96% 58%;
-  --gold-soft: 49 97% 68%;
-  --gold-deep: 42 94% 50%;
-  --brand-pink: 326 78% 58%;
+  /* Gold accent — a touch brighter on dark surfaces */
+  --gold: 44 84% 58%;
+  --gold-soft: 46 90% 66%;
+  --gold-deep: 39 84% 48%;
+  --brand-pink: 326 76% 58%;
 
-  --chart-1: 47 96% 58%;
-  --chart-2: 198 78% 56%;
-  --chart-3: 210 58% 36%;
-  --chart-4: 326 78% 58%;
-  --chart-5: 168 78% 50%;
+  --chart-1: 205 88% 56%;
+  --chart-2: 192 82% 52%;
+  --chart-3: 168 70% 50%;
+  --chart-4: 44 84% 58%;
+  --chart-5: 220 35% 62%;
 }
 
 @layer base {

@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import type { CorsOptions } from "cors";
+import { verifyToken } from "../lib/jwt.js";
 
 type RateLimitOptions = {
   windowMs: number;
@@ -40,6 +41,24 @@ export function requestIp(req: Request): string {
     return forwarded[0].split(",")[0]?.trim() || req.ip || "unknown";
   }
   return req.ip || req.socket.remoteAddress || "unknown";
+}
+
+// Identify the caller for rate-limiting. Prefer the authenticated user id so that
+// many members sharing one egress IP (e.g. 40 people behind a Cloudflare/ngrok
+// tunnel) each get an independent bucket. Keying by IP collapsed them into one
+// bucket and tripped 429 for everyone at once at peak load. Falls back to IP for
+// anonymous requests (login/register have their own ip:identifier limiters).
+export function rateLimitIdentity(req: Request): string {
+  const authHeader = req.headers.authorization;
+  if (typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
+    try {
+      const { userId } = verifyToken(authHeader.slice(7));
+      if (userId) return `uid:${userId}`;
+    } catch {
+      // invalid/expired token — fall through to IP-based keying
+    }
+  }
+  return `ip:${requestIp(req)}`;
 }
 
 export function corsOptions(): CorsOptions {

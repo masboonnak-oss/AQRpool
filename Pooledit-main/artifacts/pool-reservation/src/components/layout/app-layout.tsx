@@ -64,12 +64,17 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row relative">
+      {/* Keyboard/screen-reader skip link — first focusable element, hidden until focused. */}
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:shadow-lg">
+        ข้ามไปยังเนื้อหาหลัก
+      </a>
       {/* Interactive ambient backdrop shared across all pages */}
       <AmbientBackground />
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
         <Header />
         <main
+          id="main-content"
           ref={mainRef}
           className={`flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 lg:p-8 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-[max(0.75rem,env(safe-area-inset-bottom))] ${isAdmin ? "admin-portal" : "member-portal"}`}
         >

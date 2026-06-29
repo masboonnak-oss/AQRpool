@@ -48,6 +48,15 @@ const getPublicPackages = async (): Promise<PublicPackage[]> => {
   return res.json();
 };
 
+type PublicReview = { id: number; rating: number; comment: string | null; reviewer?: string; createdAt: string };
+type ReviewsResponse = { reviews: PublicReview[]; summary: { average: number; count: number } };
+
+const getPublicReviews = async (): Promise<ReviewsResponse> => {
+  const res = await fetch(`${baseUrl}/api/reviews`);
+  if (!res.ok) return { reviews: [], summary: { average: 0, count: 0 } };
+  return res.json();
+};
+
 const th = {
   navServices: "บริการ",
   navPackages: "แพ็กเกจ",
@@ -117,6 +126,13 @@ export const Landing: FC = () => {
     queryFn: getPublicPackages,
     retry: false,
   });
+  const { data: reviewData } = useQuery({
+    queryKey: ["public", "reviews", "landing"],
+    queryFn: getPublicReviews,
+    retry: false,
+  });
+  const reviews = reviewData?.reviews ?? [];
+  const reviewSummary = reviewData?.summary ?? { average: 0, count: 0 };
 
   const ageCards = [
     { title: copy.kids, desc: copy.kidsDesc, icon: Baby, image: asset("kid_ztP_hq.jpg"), tone: "bg-sky-50 text-sky-700 border-sky-100" },
@@ -145,9 +161,9 @@ export const Landing: FC = () => {
         <nav className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
           <BrandMark size="sm" tagline={false} />
           <div className="ml-auto hidden items-center gap-5 text-sm font-semibold md:flex">
-            <a href="#services" className="hover:text-[#2BA9E0]">{copy.navServices}</a>
-            <a href="#packages" className="hover:text-[#2BA9E0]">{copy.navPackages}</a>
-            <a href="#contact" className="hover:text-[#2BA9E0]">{copy.navContact}</a>
+            <a href="#services" className="hover:text-[#1378B8]">{copy.navServices}</a>
+            <a href="#packages" className="hover:text-[#1378B8]">{copy.navPackages}</a>
+            <a href="#contact" className="hover:text-[#1378B8]">{copy.navContact}</a>
           </div>
           <Button variant="ghost" size="icon" className="md:hidden" aria-label="Menu">
             <Menu className="h-5 w-5" />
@@ -159,7 +175,7 @@ export const Landing: FC = () => {
           <Button asChild variant="ghost" size="sm" className="hidden rounded-lg md:inline-flex">
             <Link href="/login">{copy.login}</Link>
           </Button>
-          <Button asChild size="sm" className="rounded-lg bg-[#2BA9E0] text-white hover:bg-[#1f93c7]">
+          <Button asChild size="sm" className="rounded-lg bg-[#1378B8] text-white hover:bg-[#0F6298]">
             <Link href="/register">{copy.register}</Link>
           </Button>
         </nav>
@@ -178,7 +194,7 @@ export const Landing: FC = () => {
             <p className="mt-4 max-w-2xl text-lg font-medium text-white/90">{copy.heroSub}</p>
             <p className="mt-2 max-w-2xl text-sm text-white/80 sm:text-base">{copy.heroTag}</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="h-12 rounded-lg bg-[#2BA9E0] px-7 text-base font-bold text-white hover:bg-[#1f93c7]">
+              <Button asChild size="lg" className="h-12 rounded-lg bg-[#1378B8] px-7 text-base font-bold text-white hover:bg-[#0F6298]">
                 <Link href="/book">{copy.book}<CalendarCheck className="ml-2 h-5 w-5" /></Link>
               </Button>
               <Button asChild size="lg" className="h-12 rounded-lg bg-[#F2C200] px-7 text-base font-bold text-[#1B3A5B] hover:bg-[#e3b500]">
@@ -242,7 +258,7 @@ export const Landing: FC = () => {
           <div className="mt-7 space-y-4">
             {reasons.map((reason) => (
               <div key={reason} className="flex gap-3 rounded-lg bg-white p-4 shadow-sm">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#2BA9E0] text-white">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#1378B8] text-white">
                   <Check className="h-4 w-4" />
                 </div>
                 <p className="text-sm font-medium text-[#31506d] sm:text-base">{reason}</p>
@@ -287,6 +303,29 @@ export const Landing: FC = () => {
         </div>
       </section>
 
+      {reviews.length > 0 && (
+        <section className="mx-auto max-w-6xl px-4 py-14 sm:py-16">
+          <SectionTitle
+            title={isEn ? "What our members say" : "เสียงจากสมาชิก"}
+            sub={isEn ? `${reviewSummary.average.toFixed(1)} out of 5 from ${reviewSummary.count} reviews` : `คะแนนเฉลี่ย ${reviewSummary.average.toFixed(1)} จาก 5 · ${reviewSummary.count} รีวิว`}
+            icon={Star}
+          />
+          <div className="mt-9 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {reviews.slice(0, 6).map((r) => (
+              <article key={r.id} className="rounded-lg border border-white bg-white p-5 shadow-sm">
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star key={n} className={`h-4 w-4 ${n <= r.rating ? "fill-[#F2C200] text-[#F2C200]" : "text-[#cdd9e3]"}`} />
+                  ))}
+                </div>
+                {r.comment && <p className="mt-3 text-sm text-[#31506d]">“{r.comment}”</p>}
+                <div className="mt-3 text-sm font-bold text-[#1B3A5B]">{r.reviewer}</div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section id="contact" className="bg-[#d4e8f8] px-4 py-14 sm:py-16">
         <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-2 lg:items-center">
           <div>
@@ -298,7 +337,7 @@ export const Landing: FC = () => {
             </div>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <div className="rounded-lg bg-white p-4 shadow-sm">
-                <div className="text-xs font-bold text-[#2BA9E0]">{isEn ? "Floor 1" : "ชั้น 1"}</div>
+                <div className="text-xs font-bold text-[#1378B8]">{isEn ? "Floor 1" : "ชั้น 1"}</div>
                 <div className="mt-1 text-sm font-semibold">{isEn ? "Pool, therapy, sauna, massage" : "สระ ธาราบำบัด ซาวน่า นวด"}</div>
               </div>
               <div className="rounded-lg bg-white p-4 shadow-sm">
@@ -316,7 +355,7 @@ export const Landing: FC = () => {
         </div>
       </section>
 
-      <section className="bg-[#2BA9E0] px-4 py-14 text-center text-white sm:py-16">
+      <section className="bg-[#1378B8] px-4 py-14 text-center text-white sm:py-16">
         <h2 className="text-3xl font-extrabold">{copy.finalTitle}</h2>
         <p className="mx-auto mt-3 max-w-2xl text-white/90">{copy.finalSub}</p>
         <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
@@ -338,7 +377,7 @@ export const Landing: FC = () => {
 
 const SectionTitle: FC<{ title: string; sub?: string; icon: any; dark?: boolean; align?: "center" | "left" }> = ({ title, sub, icon: Icon, dark = false, align = "center" }) => (
   <div className={align === "center" ? "mx-auto max-w-2xl text-center" : "max-w-2xl"}>
-    <div className={`inline-flex h-11 w-11 items-center justify-center rounded-lg ${dark ? "bg-[#F2C200] text-[#1B3A5B]" : "bg-[#2BA9E0] text-white"}`}>
+    <div className={`inline-flex h-11 w-11 items-center justify-center rounded-lg ${dark ? "bg-[#F2C200] text-[#1B3A5B]" : "bg-[#1378B8] text-white"}`}>
       <Icon className="h-6 w-6" />
     </div>
     <h2 className={`mt-3 text-3xl font-extrabold sm:text-4xl ${dark ? "text-white" : "text-[#1B3A5B]"}`}>{title}</h2>
@@ -348,7 +387,7 @@ const SectionTitle: FC<{ title: string; sub?: string; icon: any; dark?: boolean;
 
 const InfoLine: FC<{ icon: any; text: string }> = ({ icon: Icon, text }) => (
   <div className="flex items-center gap-3 rounded-lg bg-white p-3 shadow-sm">
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#2BA9E0] text-white">
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#1378B8] text-white">
       <Icon className="h-4 w-4" />
     </div>
     <span className="text-sm font-semibold">{text}</span>

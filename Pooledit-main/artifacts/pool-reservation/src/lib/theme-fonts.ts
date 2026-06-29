@@ -11,7 +11,7 @@ export type FontDef = {
 };
 
 export const FONTS: FontDef[] = [
-  { key: "default", label: "ค่าเริ่มต้น", note: "Inter / Sora — โมเดิร์น", sans: "'Inter', sans-serif", display: "'Sora','Inter',sans-serif", families: [] },
+  { key: "default", label: "ค่าเริ่มต้น", note: "Plus Jakarta Sans / Sora — พรีเมียม โมเดิร์น", sans: "'Plus Jakarta Sans', sans-serif", display: "'Sora','Plus Jakarta Sans',sans-serif", families: [] },
   { key: "kanit", label: "Kanit", note: "โมเดิร์นพรีเมียม สไตล์แบรนด์ไทย", sans: "'Kanit', sans-serif", display: "'Kanit', sans-serif", families: ["Kanit:wght@300;400;500;600;700;800"] },
   { key: "prompt", label: "Prompt", note: "เรขาคณิต สะอาดตา ทางการ", sans: "'Prompt', sans-serif", display: "'Prompt', sans-serif", families: ["Prompt:wght@300;400;500;600;700"] },
   { key: "sarabun", label: "Sarabun", note: "ทางการ อ่านง่าย (ฟอนต์ราชการ)", sans: "'Sarabun', sans-serif", display: "'Sarabun', sans-serif", families: ["Sarabun:wght@300;400;500;600;700"] },

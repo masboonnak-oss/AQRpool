@@ -225,7 +225,7 @@ export const Header: FC = () => {
   };
 
   return (
-    <header className="h-16 border-b border-primary/20 bg-card/88 shadow-sm shadow-[hsl(var(--glow)/0.08)] backdrop-blur-md flex items-center justify-between px-4 md:px-6 sticky top-0 z-30">
+    <header className="h-16 border-b border-primary/15 bg-card/92 shadow-sm shadow-black/[0.03] backdrop-blur-md flex items-center justify-between px-3 md:px-5 sticky top-0 z-30">
       {/* Mobile hamburger + brand */}
       <div className="flex items-center gap-1 md:hidden">
         <Sheet open={open} onOpenChange={setOpen}>
@@ -239,8 +239,8 @@ export const Header: FC = () => {
               <Menu className="w-5 h-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-72 p-0 flex flex-col">
-            <SheetHeader className="p-4 border-b border-border">
+          <SheetContent side="left" className="w-[82vw] max-w-80 p-0 flex flex-col">
+            <SheetHeader className="p-4 border-b border-border bg-muted/30">
               <SheetTitle className="text-left">
                 <BrandMark size="md" tagline />
               </SheetTitle>
@@ -273,7 +273,7 @@ export const Header: FC = () => {
                         <div
                           onClick={handleNavClick}
                           className={cn(
-                            "flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer",
+                            "flex items-center gap-3 px-3 py-3 rounded-md text-sm font-bold transition-all cursor-pointer",
                             isActive
                               ? "bg-gold text-primary-foreground shadow-sm"
                               : "text-foreground hover:bg-accent hover:text-accent-foreground"
@@ -296,7 +296,7 @@ export const Header: FC = () => {
                     <div
                       onClick={handleNavClick}
                       className={cn(
-                        "flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer",
+                        "flex items-center gap-3 px-3 py-3 rounded-md text-sm font-bold transition-all cursor-pointer",
                         isActive
                           ? "bg-gold text-primary-foreground shadow-sm"
                           : "text-foreground hover:bg-accent hover:text-accent-foreground"
@@ -349,14 +349,20 @@ export const Header: FC = () => {
       </div>
 
       {/* Desktop: greeting */}
-      <div className="hidden md:flex items-center text-sm text-muted-foreground">
-        {user
-          ? `${t("dash.welcome")}, ${user.firstName} ${user.lastName}`
-          : ""}
+      <div className="hidden md:flex min-w-0 items-center gap-3 text-sm">
+        <div className="h-8 w-1 rounded-full bg-brand" />
+        <div className="min-w-0">
+          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {isDev ? "Developer" : isAdmin ? "Admin Workspace" : isInstructor ? "Instructor Workspace" : isStaff ? "Staff Workspace" : "Member Workspace"}
+          </div>
+          <div className="truncate font-semibold text-foreground">
+            {user ? `${t("dash.welcome")}, ${user.firstName} ${user.lastName}` : ""}
+          </div>
+        </div>
       </div>
 
       {/* Right side actions */}
-      <div className="flex items-center gap-2 ml-auto">
+      <div className="flex items-center gap-1.5 sm:gap-2 ml-auto">
         {/* super_admin branch switcher (self-hides for everyone else) */}
         <BranchSwitcher />
         {!isAdmin && (

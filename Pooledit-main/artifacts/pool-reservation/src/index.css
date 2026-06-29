@@ -110,6 +110,8 @@
 
   --accent: 205 64% 92%;
   --accent-foreground: 212 72% 27%;
+  --success: 166 74% 35%;
+  --warning: 38 92% 50%;
 
   --destructive: 0 75% 50%;
   --destructive-foreground: 0 0% 100%;
@@ -139,8 +141,8 @@
   --chart-1: 212 85% 40%;
   --chart-2: 196 80% 46%;
   --chart-3: 168 70% 40%;
-  --chart-4: 43 80% 50%;
-  --chart-5: 220 32% 55%;
+  --chart-4: 326 70% 50%;
+  --chart-5: 43 80% 50%;
 
   --app-font-sans: 'Plus Jakarta Sans', 'Noto Sans Thai', 'Leelawadee UI', Tahoma, sans-serif;
   --app-font-display: 'Sora', 'Plus Jakarta Sans', 'Noto Sans Thai', 'Leelawadee UI', Tahoma, sans-serif;
@@ -193,6 +195,8 @@
 
   --accent: 205 50% 18%;
   --accent-foreground: 200 85% 80%;
+  --success: 166 70% 48%;
+  --warning: 40 90% 58%;
 
   --destructive: 0 75% 58%;
   --destructive-foreground: 0 0% 100%;
@@ -220,8 +224,8 @@
   --chart-1: 205 88% 56%;
   --chart-2: 192 82% 52%;
   --chart-3: 168 70% 50%;
-  --chart-4: 44 84% 58%;
-  --chart-5: 220 35% 62%;
+  --chart-4: 326 76% 58%;
+  --chart-5: 44 84% 58%;
 }
 
 @layer base {
@@ -254,9 +258,59 @@
   }
   h1, h2, .font-display {
     font-family: var(--app-font-display);
+    letter-spacing: 0;
+  }
+  h3, h4, h5, h6, p, span, button, a, label, input, select, textarea {
+    letter-spacing: 0;
   }
   button, [role="button"], input, select, textarea {
     touch-action: manipulation;
+  }
+}
+
+@layer components {
+  .admin-portal > .animate-page,
+  .member-portal > .animate-page {
+    @apply space-y-5;
+  }
+
+  .admin-portal table,
+  .member-portal table {
+    @apply w-full text-sm;
+  }
+
+  .admin-portal th,
+  .member-portal th {
+    @apply h-10 whitespace-nowrap px-3 text-left text-xs font-bold uppercase text-muted-foreground;
+  }
+
+  .admin-portal td,
+  .member-portal td {
+    @apply px-3 py-3 align-middle;
+  }
+
+  .admin-portal tbody tr,
+  .member-portal tbody tr {
+    @apply border-b border-border/70 transition-colors hover:bg-muted/45;
+  }
+
+  .admin-portal input,
+  .admin-portal select,
+  .admin-portal textarea,
+  .member-portal input,
+  .member-portal select,
+  .member-portal textarea {
+    @apply rounded-md border-border bg-card text-sm;
+  }
+
+  .admin-portal [role="tablist"],
+  .member-portal [role="tablist"] {
+    @apply rounded-md border border-border/70 bg-muted/55 p-1;
+  }
+
+  .admin-portal [role="tab"],
+  .member-portal [role="tab"] {
+    @apply rounded-sm font-semibold;
   }
 }
 

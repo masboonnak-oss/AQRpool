@@ -12,8 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
 import { Users, CalendarCheck, CalendarDays, BarChart2, TrendingUp, XCircle, LayoutDashboard, ShoppingBag, Wallet, Package, AlertTriangle, ArrowRight } from "lucide-react";
 import {
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -26,7 +26,13 @@ export const AdminDashboard: FC = () => {
   const { data: stats } = useGetAdminStats();
   const { data: monthlyData } = useGetMonthlyStats(
     {},
-    { query: { queryKey: getGetMonthlyStatsQueryKey({}) } }
+    {
+      query: {
+        queryKey: getGetMonthlyStatsQueryKey({}),
+        refetchInterval: 30000,
+        refetchIntervalInBackground: true,
+      },
+    }
   );
   const { data: topUsers } = useGetTopUsers();
 
@@ -214,15 +220,19 @@ export const AdminDashboard: FC = () => {
 
       {/* Charts + top users */}
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-7">
-        {/* Monthly bar chart */}
+        {/* Monthly live line chart */}
         <Card className="lg:col-span-4">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-base">{t("admin.monthlyChart")}</CardTitle>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-300">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              Live
+            </span>
           </CardHeader>
           <CardContent className="h-[280px] sm:h-[320px]">
             {monthlyData && monthlyData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyData} margin={{ left: -20, right: 8 }}>
+                <LineChart data={monthlyData} margin={{ left: -20, right: 12, top: 8, bottom: 4 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                   <XAxis
                     dataKey="month"
@@ -240,13 +250,16 @@ export const AdminDashboard: FC = () => {
                       fontSize: 12,
                     }}
                   />
-                  <Bar
+                  <Line
+                    type="monotone"
                     dataKey="count"
-                    fill="hsl(var(--primary))"
-                    radius={[4, 4, 0, 0]}
                     name={t("admin.stats.reservations")}
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={3}
+                    dot={{ r: 4, fill: "hsl(var(--card))", stroke: "hsl(var(--primary))", strokeWidth: 2 }}
+                    activeDot={{ r: 6, fill: "hsl(var(--primary))", stroke: "hsl(var(--card))", strokeWidth: 2 }}
                   />
-                </BarChart>
+                </LineChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center text-muted-foreground text-sm">

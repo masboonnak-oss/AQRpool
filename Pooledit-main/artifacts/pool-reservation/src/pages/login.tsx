@@ -20,6 +20,21 @@ const loginSchema = z.object({
   password: z.string().min(1, "Required"),
 });
 
+function getLoginErrorMessage(error: any): string {
+  const status = error?.status ?? error?.response?.status;
+  const serverMessage = error?.data?.message || error?.data?.error || error?.response?.data?.message || error?.response?.data?.error;
+
+  if (status === 401) return "ชื่อผู้ใช้ อีเมล เบอร์โทร หรือรหัสผ่านไม่ถูกต้อง";
+  if (status === 429) return "มีการพยายามเข้าสู่ระบบถี่เกินไป กรุณารอสักครู่แล้วลองใหม่";
+  if (status >= 500) return "ระบบเซิร์ฟเวอร์ยังไม่พร้อมใช้งาน กรุณาลองใหม่อีกครั้ง";
+  if (serverMessage) return serverMessage;
+  if (error instanceof TypeError || /failed to fetch|network|ECONNREFUSED/i.test(String(error?.message || ""))) {
+    return "เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ กรุณาตรวจสอบว่า API เปิดอยู่";
+  }
+
+  return error?.message || "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่";
+}
+
 const features = [
   { icon: CalendarCheck, title: "จองง่ายในไม่กี่วินาที", desc: "เลือกวัน-เวลา แล้วยืนยันได้ทันที" },
   { icon: Waves, title: "ครูฝึกมืออาชีพ", desc: "เลือกครูและจัดคิวฝึกของคุณเอง" },
@@ -77,7 +92,7 @@ export const Login: FC = () => {
         setLocation(res.user.role === "admin" ? "/admin" : "/dashboard");
       },
       onError: (error: any) => {
-        const errorMessage = error?.message || error?.response?.data?.error || "Login failed. Please try again.";
+        const errorMessage = getLoginErrorMessage(error);
         setError(errorMessage);
         toast({ title: "Login Failed", description: errorMessage, variant: "destructive" });
       },

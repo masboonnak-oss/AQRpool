@@ -76,10 +76,10 @@ export const AppLayout: FC<AppLayoutProps> = ({ children }) => {
         <main
           id="main-content"
           ref={mainRef}
-          className={`flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 lg:p-8 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-[max(0.75rem,env(safe-area-inset-bottom))] ${isAdmin ? "admin-portal" : "member-portal"}`}
+          className={`flex-1 overflow-y-auto overflow-x-hidden bg-[linear-gradient(180deg,hsl(var(--background)),hsl(var(--muted)/0.42))] p-3 sm:p-4 md:p-5 lg:p-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-[max(1rem,env(safe-area-inset-bottom))] ${isAdmin ? "admin-portal" : "member-portal"}`}
         >
           {/* keyed wrapper → quick GPU fade/slide on each navigation */}
-          <div key={location} className="animate-page">
+          <div key={location} className="animate-page mx-auto w-full max-w-[1680px]">
             {children}
           </div>
         </main>

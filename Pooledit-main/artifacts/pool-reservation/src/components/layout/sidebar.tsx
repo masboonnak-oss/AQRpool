@@ -222,12 +222,12 @@ export const Sidebar: FC = () => {
   const avatarUrl = (user as any)?.profileImageUrl;
 
   return (
-    <aside className="hidden md:flex w-64 flex-col bg-sidebar/95 border-r border-primary/20 shadow-[10px_0_30px_-28px_hsl(var(--glow)/0.45)] h-[100dvh] sticky top-0 backdrop-blur">
+    <aside className="hidden md:flex w-72 flex-col bg-sidebar/96 border-r border-primary/15 shadow-[10px_0_30px_-28px_hsl(var(--glow)/0.45)] h-[100dvh] sticky top-0 backdrop-blur">
       <div className="p-4 border-b border-primary/15">
         <BrandMark size="md" tagline />
       </div>
 
-      <nav className="flex-1 p-4 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         <div className="text-xs font-semibold text-muted-foreground mb-3 px-3">{isDev ? "DEV" : isAdmin ? "ADMIN" : isInstructor ? "INSTRUCTOR" : isStaff ? "พนักงาน" : "MEMBER"}</div>
         {navGroups ? navGroups.map((group) => (
           <div key={group.title} className="space-y-0.5">
@@ -240,7 +240,7 @@ export const Sidebar: FC = () => {
               return (
                 <Link key={link.href} href={link.href}>
                   <div className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 cursor-pointer",
+                    "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-bold transition-all duration-200 cursor-pointer",
                     isActive
                       ? "bg-gold text-primary-foreground shadow-md shadow-[hsl(var(--gold)/0.32)]"
                       : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:translate-x-0.5"
@@ -265,7 +265,7 @@ export const Sidebar: FC = () => {
           return (
             <Link key={link.href} href={link.href}>
               <div className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 cursor-pointer",
+                "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-bold transition-all duration-200 cursor-pointer",
                 isActive
                   ? "bg-gold text-primary-foreground shadow-md shadow-[hsl(var(--gold)/0.32)]"
                   : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:translate-x-0.5"

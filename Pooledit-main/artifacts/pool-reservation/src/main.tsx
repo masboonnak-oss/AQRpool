@@ -41,4 +41,12 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {});
   });
+} else if (!import.meta.env.PROD && "serviceWorker" in navigator) {
+  // Dev: a service worker left over from a previous production build on this origin
+  // would intercept requests and serve a stale app ("nothing updates"). Proactively
+  // unregister it and wipe its caches so dev always reflects the latest code.
+  navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister())).catch(() => {});
+  if (typeof caches !== "undefined") {
+    caches.keys().then((ks) => ks.forEach((k) => caches.delete(k))).catch(() => {});
+  }
 }

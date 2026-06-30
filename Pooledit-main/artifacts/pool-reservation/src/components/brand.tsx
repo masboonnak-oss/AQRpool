@@ -1,5 +1,6 @@
 import { FC } from "react";
 import { cn } from "@/lib/utils";
+import { useBrandLogo } from "@/lib/brand-logo";
 
 type BrandSize = "sm" | "md" | "lg";
 
@@ -36,11 +37,13 @@ export const BrandMark: FC<BrandMarkProps> = ({
   tagline = false,
   className,
 }) => {
+  const logoUrl = useBrandLogo();
+
   return (
     <div className={cn("flex items-center gap-2.5", className)}>
       <div className={cn("bg-brand glow-sm flex-shrink-0", tile[size])}>
         <img
-          src="/aquarich-logo.png"
+          src={logoUrl}
           alt="Aquarich"
           className={cn("object-contain", img[size])}
         />

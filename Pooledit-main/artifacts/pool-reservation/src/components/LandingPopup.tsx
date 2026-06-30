@@ -8,6 +8,7 @@ import {
   X, Sparkles, ArrowRight, CalendarCheck, Waves, HeartPulse, Globe,
   Wallet, Ticket,
 } from "lucide-react";
+import { useBrandLogo } from "@/lib/brand-logo";
 
 /* localStorage flag — set when the visitor ticks "don't show again". */
 const HIDE_KEY = "aquarich_landing_popup_hidden";
@@ -21,6 +22,7 @@ export const LandingPopup: FC = () => {
   const { t, language, setLanguage } = useTranslation();
   const { isAuthenticated, isLoading } = useAuth();
   const [location, setLocation] = useLocation();
+  const logoUrl = useBrandLogo();
   const [open, setOpen] = useState(false);
   const [dontShow, setDontShow] = useState(false);
 
@@ -113,7 +115,7 @@ export const LandingPopup: FC = () => {
 
           <div className="relative mt-4 flex items-center gap-3.5">
             <div className="bg-white/15 ring-1 ring-amber-200/40 rounded-2xl p-2.5 shadow-inner shrink-0">
-              <img src="/aquarich-logo.png" alt="Aquarich" className="w-12 h-12 object-contain drop-shadow" draggable={false} />
+              <img src={logoUrl} alt="Aquarich" className="w-12 h-12 object-contain drop-shadow" draggable={false} />
             </div>
             <div className="min-w-0">
               <h2 className="text-2xl font-display font-extrabold leading-tight drop-shadow-sm">{t("popup.welcome")}</h2>

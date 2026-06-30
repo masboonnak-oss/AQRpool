@@ -3,10 +3,14 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Palette, Save, RotateCcw, Check, Sparkles, CalendarCheck, Type } from "lucide-react";
+import { Palette, Save, RotateCcw, Check, Sparkles, CalendarCheck, Type, Image as ImageIcon, ShieldCheck } from "lucide-react";
 import { ColorWheel } from "@/components/color-wheel";
 import { applyThemeColor, deriveThemeVars, type ThemeColor } from "@/lib/theme-colors";
 import { FONTS, FONT_MAP, applyThemeFont, previewFontsHref } from "@/lib/theme-fonts";
+import { ImageUpload } from "@/components/image-upload";
+import { BrandMark } from "@/components/brand";
+import { applyBrandLogo, DEFAULT_LOGO_URL } from "@/lib/brand-logo";
+import { useAuth } from "@/hooks/use-auth";
 
 const DEFAULT: ThemeColor = { h: 212, s: 85, l: 33 };
 const PRESETS: { name: string; c: ThemeColor }[] = [
@@ -24,20 +28,23 @@ const PRESETS: { name: string; c: ThemeColor }[] = [
 
 export function AdminTheme() {
   const { toast } = useToast();
+  const { isDev } = useAuth();
   const token = localStorage.getItem("pool_token");
   const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
 
   const [color, setColor] = useState<ThemeColor>(DEFAULT);
   const [font, setFont] = useState<string>("default");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const savedRef = useRef<{ color: ThemeColor | null; font: string | null }>({ color: null, font: null });
+  const savedRef = useRef<{ color: ThemeColor | null; font: string | null; logoUrl: string | null }>({ color: null, font: null, logoUrl: null });
 
   // Load current published theme + load all preview fonts so the picker renders correctly.
   useEffect(() => {
     fetch(`${baseUrl}/api/theme`).then((r) => (r.ok ? r.json() : null)).then((d) => {
-      savedRef.current = { color: d?.color ?? null, font: d?.font ?? null };
+      savedRef.current = { color: d?.color ?? null, font: d?.font ?? null, logoUrl: d?.logoUrl ?? null };
       if (d?.color) setColor(d.color);
       if (d?.font) setFont(d.font);
+      setLogoUrl(d?.logoUrl ?? null);
     }).catch(() => {});
 
     const url = previewFontsHref();
@@ -52,6 +59,7 @@ export function AdminTheme() {
     return () => {
       applyThemeColor(savedRef.current.color);
       applyThemeFont(savedRef.current.font);
+      applyBrandLogo(savedRef.current.logoUrl);
       link?.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -60,18 +68,21 @@ export function AdminTheme() {
   // Live preview as the admin edits.
   useEffect(() => { applyThemeColor(color); }, [color]);
   useEffect(() => { applyThemeFont(font); }, [font]);
+  useEffect(() => { applyBrandLogo(logoUrl); }, [logoUrl]);
 
   const publish = async () => {
     setSaving(true);
     try {
+      const body: { color: ThemeColor | null; font: string | null; logoUrl?: string | null } = { color, font };
+      if (isDev) body.logoUrl = logoUrl;
       const r = await fetch(`${baseUrl}/api/theme`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ color, font }),
+        body: JSON.stringify(body),
       });
       if (!r.ok) throw new Error();
-      savedRef.current = { color, font };
-      toast({ title: "เผยแพร่ธีมแล้ว", description: "ทุกเครื่องจะเปลี่ยนสี/ฟอนต์ตามภายในไม่กี่วินาที" });
+      savedRef.current = { color, font, logoUrl: isDev ? logoUrl : savedRef.current.logoUrl };
+      toast({ title: "เผยแพร่ธีมแล้ว", description: isDev ? "สี ฟอนต์ และโลโก้จะอัปเดตให้ทุกเครื่องภายในไม่กี่วินาที" : "ทุกเครื่องจะเปลี่ยนสี/ฟอนต์ตามภายในไม่กี่วินาที" });
     } catch {
       toast({ title: "บันทึกไม่สำเร็จ", variant: "destructive" });
     } finally { setSaving(false); }
@@ -80,15 +91,17 @@ export function AdminTheme() {
   const resetDefault = async () => {
     setSaving(true);
     try {
+      const body: { color: null; font: null; logoUrl?: null } = { color: null, font: null };
+      if (isDev) body.logoUrl = null;
       const r = await fetch(`${baseUrl}/api/theme`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ color: null, font: null }),
+        body: JSON.stringify(body),
       });
       if (!r.ok) throw new Error();
-      savedRef.current = { color: null, font: null };
-      setColor(DEFAULT); setFont("default");
-      applyThemeColor(null); applyThemeFont(null);
+      savedRef.current = { color: null, font: null, logoUrl: isDev ? null : savedRef.current.logoUrl };
+      setColor(DEFAULT); setFont("default"); if (isDev) setLogoUrl(null);
+      applyThemeColor(null); applyThemeFont(null); if (isDev) applyBrandLogo(null);
       toast({ title: "คืนค่าเริ่มต้นแล้ว" });
     } catch {
       toast({ title: "ไม่สำเร็จ", variant: "destructive" });
@@ -100,6 +113,57 @@ export function AdminTheme() {
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto">
       <PageHeader title="ธีมเว็บไซต์" subtitle="เลือกสีหลักและฟอนต์ของระบบ แล้วเผยแพร่ให้ทุกเครื่องเห็นแบบเรียลไทม์" icon={Palette} gradient="from-fuchsia-500 to-violet-600" />
+
+      {isDev && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <ImageIcon className="w-4 h-4 text-primary" />
+              โลโก้เว็บไซต์
+              <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">
+                <ShieldCheck className="h-3 w-3" /> DEV
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-5 lg:grid-cols-[1fr_320px]">
+            <div className="space-y-3">
+              <ImageUpload
+                value={logoUrl}
+                onChange={setLogoUrl}
+                maxMb={2}
+                shape="square"
+                label="อัปโหลดโลโก้"
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={publish} disabled={saving} className="gap-2">
+                  <Save className="w-4 h-4" />
+                  {saving ? "กำลังบันทึก..." : "บันทึกและเผยแพร่โลโก้"}
+                </Button>
+                <Button variant="outline" onClick={() => setLogoUrl(null)} disabled={saving} className="gap-2">
+                  <RotateCcw className="w-4 h-4" />
+                  ใช้โลโก้เริ่มต้น
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                รองรับ JPG/PNG/WebP สูงสุด 2MB เมื่อกดบันทึกและเผยแพร่ โลโก้จะอัปเดตให้ทุกหน้าที่ใช้แบรนด์กลางแบบเรียลไทม์
+              </p>
+            </div>
+            <div className="rounded-md border border-border bg-muted/30 p-4 space-y-4">
+              <div className="text-xs font-semibold uppercase text-muted-foreground">ตัวอย่างโลโก้</div>
+              <div className="rounded-md border bg-card p-4">
+                <BrandMark size="md" tagline />
+              </div>
+              <div className="flex items-center gap-3 rounded-md border bg-card p-4">
+                <img src={logoUrl || DEFAULT_LOGO_URL} alt="Logo preview" className="h-16 w-16 rounded-md object-contain bg-muted p-1" />
+                <div>
+                  <div className="font-semibold">Aquarich</div>
+                  <div className="text-xs text-muted-foreground">โลโก้ที่จะเผยแพร่</div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Picker */}

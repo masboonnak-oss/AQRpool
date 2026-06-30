@@ -14,6 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Waves, ShieldCheck, CalendarCheck, Clock, Globe } from "lucide-react";
+import { useBrandLogo } from "@/lib/brand-logo";
 
 const loginSchema = z.object({
   usernameOrEmail: z.string().min(1, "Required"),
@@ -47,6 +48,7 @@ export const Login: FC = () => {
   const [, setLocation] = useLocation();
   const { login } = useAuth();
   const { toast } = useToast();
+  const logoUrl = useBrandLogo();
   const [error, setError] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -126,7 +128,7 @@ export const Login: FC = () => {
             <div className="relative inline-flex" style={{ transform: "translate3d(calc(var(--px,0) * -14px), calc(var(--py,0) * -14px), 0)" }}>
               <div aria-hidden className="absolute inset-0 -m-4 rounded-[2rem] bg-brand blur-2xl opacity-50 animate-float-slow" />
               <div className="relative bg-brand bg-brand-animated rounded-3xl p-3.5 shadow-2xl shadow-primary/30 ring-1 ring-white/30 sheen">
-                <img src="/aquarich-logo.png" alt="Aquarich" className="w-16 h-16 object-contain drop-shadow-md select-none" draggable={false} />
+                <img src={logoUrl} alt="Aquarich" className="w-16 h-16 object-contain drop-shadow-md select-none" draggable={false} />
               </div>
             </div>
             <h1 className="mt-4 text-4xl font-display font-extrabold text-gradient-shine tracking-tight">Aquarich</h1>

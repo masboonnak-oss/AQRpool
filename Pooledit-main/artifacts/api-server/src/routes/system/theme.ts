@@ -3,7 +3,7 @@
 import { Router } from "express";
 import { db, appThemeTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { authenticate, requireAdmin } from "../../middlewares/auth.js";
+import { authenticate, isDevRole, requireAdmin } from "../../middlewares/auth.js";
 
 const router = Router();
 
@@ -21,16 +21,26 @@ const asColor = (o: any) =>
     ? { h: Math.round(o.h), s: Math.round(o.s), l: Math.round(o.l) }
     : null;
 
-function parse(data: string | null): { color: { h: number; s: number; l: number } | null; font: string | null } {
-  if (!data) return { color: null, font: null };
+type ThemePayload = {
+  color: { h: number; s: number; l: number } | null;
+  font: string | null;
+  logoUrl: string | null;
+};
+
+function parse(data: string | null): ThemePayload {
+  if (!data) return { color: null, font: null, logoUrl: null };
   try {
     const v = JSON.parse(data);
-    if (v && (v.color !== undefined || v.font !== undefined)) {
-      return { color: asColor(v.color), font: typeof v.font === "string" && v.font ? v.font : null };
+    if (v && (v.color !== undefined || v.font !== undefined || v.logoUrl !== undefined)) {
+      return {
+        color: asColor(v.color),
+        font: typeof v.font === "string" && v.font ? v.font : null,
+        logoUrl: typeof v.logoUrl === "string" && v.logoUrl ? v.logoUrl : null,
+      };
     }
-    return { color: asColor(v), font: null }; // legacy { h, s, l }
+    return { color: asColor(v), font: null, logoUrl: null }; // legacy { h, s, l }
   } catch {
-    return { color: null, font: null };
+    return { color: null, font: null, logoUrl: null };
   }
 }
 
@@ -68,12 +78,23 @@ router.patch("/", authenticate, requireAdmin, async (req, res) => {
     const cur = parse(row.data);
     let color = cur.color;
     let font = cur.font;
+    let logoUrl = cur.logoUrl;
     if ("color" in req.body) color = asColor(req.body.color);
     if ("font" in req.body) font = typeof req.body.font === "string" && req.body.font ? req.body.font : null;
-    const data = JSON.stringify({ color, font });
+    if ("logoUrl" in req.body) {
+      if (!isDevRole(req.user?.role)) {
+        return res.status(403).json({ error: "Forbidden: developer only" });
+      }
+      const nextLogo = typeof req.body.logoUrl === "string" && req.body.logoUrl ? req.body.logoUrl : null;
+      if (nextLogo && (!nextLogo.startsWith("data:image/") || nextLogo.length > 2_500_000)) {
+        return res.status(400).json({ error: "invalid_logo", message: "Logo must be an image data URL under 2.5MB" });
+      }
+      logoUrl = nextLogo;
+    }
+    const data = JSON.stringify({ color, font, logoUrl });
     await db.update(appThemeTable).set({ data, updatedAt: new Date() }).where(eq(appThemeTable.id, 1));
     version++;
-    return res.json({ color, font, version });
+    return res.json({ color, font, logoUrl, version });
   } catch {
     return res.status(500).json({ error: "Failed to save theme" });
   }

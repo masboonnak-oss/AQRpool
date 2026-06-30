@@ -1,6 +1,7 @@
 import { FC, ReactNode, useEffect } from "react";
 import { applyThemeColor, type ThemeColor } from "@/lib/theme-colors";
 import { applyThemeFont } from "@/lib/theme-fonts";
+import { applyBrandLogo } from "@/lib/brand-logo";
 
 /**
  * Applies the site-wide accent color to every client and keeps it in sync in ~realtime
@@ -13,10 +14,11 @@ export const ThemeColorProvider: FC<{ children: ReactNode }> = ({ children }) =>
     let alive = true;
     const ctrl = new AbortController();
 
-    const apply = (d: { color?: ThemeColor | null; font?: string | null }) => {
+    const apply = (d: { color?: ThemeColor | null; font?: string | null; logoUrl?: string | null }) => {
       if (!alive) return;
       applyThemeColor(d.color ?? null);
       applyThemeFont(d.font ?? null);
+      applyBrandLogo(d.logoUrl ?? null);
     };
 
     // initial fetch (fast paint)

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, CalendarCheck, Wallet, QrCode, Globe, RefreshCw, MailCheck, ShieldCheck } from "lucide-react";
+import { useBrandLogo } from "@/lib/brand-logo";
 
 const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -39,6 +40,7 @@ export const Register: FC = () => {
   const { t, setLanguage, language } = useTranslation();
   const [, setLocation] = useLocation();
   const { login } = useAuth();
+  const logoUrl = useBrandLogo();
   const rootRef = useRef<HTMLDivElement>(null);
 
   // Pointer parallax (desktop / fine-pointer only).
@@ -153,7 +155,7 @@ export const Register: FC = () => {
         {/* Logo */}
         <div className="relative z-10 flex items-center gap-3" style={{ transform: "translate3d(calc(var(--px,0) * -10px), calc(var(--py,0) * -10px), 0)" }}>
           <div className="bg-white/15 ring-1 ring-white/30 rounded-2xl p-2 shadow-xl sheen">
-            <img src="/aquarich-logo.png" alt="Aquarich" className="w-11 h-11 object-contain drop-shadow select-none" draggable={false} />
+            <img src={logoUrl} alt="Aquarich" className="w-11 h-11 object-contain drop-shadow select-none" draggable={false} />
           </div>
           <span className="text-2xl font-display font-extrabold drop-shadow">Aquarich</span>
         </div>
@@ -189,7 +191,7 @@ export const Register: FC = () => {
             {/* mobile logo */}
             <div className="md:hidden flex items-center gap-2.5">
               <div className="bg-brand bg-brand-animated rounded-2xl p-2 shadow-lg shadow-primary/30 ring-1 ring-white/30 sheen">
-                <img src="/aquarich-logo.png" alt="Aquarich" className="w-9 h-9 object-contain" draggable={false} />
+                <img src={logoUrl} alt="Aquarich" className="w-9 h-9 object-contain" draggable={false} />
               </div>
               <span className="text-xl font-display font-extrabold text-gradient">Aquarich</span>
             </div>
